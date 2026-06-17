@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-17 (Claude Code session: git repo initialised on `main`, .gitignore + CI skeleton added and verified green locally; SS-1.6/1.8/1.9 transitioned Backlog -> To Do -> In Review -> Done with AC-check comments; SS-1.7 confirmed already Done; SS-1.2 confirmed already In Progress). System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-17 (Claude Code session: STAGE 0 CLOSED, 9/9 Foundation Stories Done. Repo initialised on `main`, pushed to github.com/davidmjackson/sight, CI green on push (Actions run 27703300519); SS-1.6/1.8/1.9 walked Backlog -> Done and SS-1.2/SS-11 In Progress -> Done, all with AC-check comments; SS-1.7 was already Done). System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -10,15 +10,12 @@ Last updated: 2026-06-17 (Claude Code session: git repo initialised on `main`, .
 - docs/ specs are shared by both. Principles live in the brain dump, state lives here, build conventions live in CLAUDE.md. Each fact has one home.
 
 ## Where we are
-Stage 0 (Foundation, Epic SS-3): 8 of 9 Stories Done. Every Stage-0 spec and decision is written,
-locked, and now reflected on the board: data strategy, both eval specs, moat spec, the base schema
-(SS-1.9), and both ADRs (SS-1.6 three-node cut, SS-1.8 auth + residency) are all Done. The only
-Story still open is SS-1.2 (SS-11, In Progress): the local repo plumbing is done (git init on `main`,
-.gitignore, pyproject.toml, CI skeleton at .github/workflows/ci.yml, placeholder smoke test — ruff +
-pytest verified green locally in a throwaway .venv). What's NOT yet done, and why SS-1.2 cannot be
-closed: the repo is not committed and has no remote, so the AC "CI runs lint+test on push, green on
-an empty suite" is unproven until the repo is pushed to a remote (e.g. GitHub) and Actions runs.
-That push is an outward-facing step awaiting the owner's go-ahead.
+Stage 0 (Foundation, Epic SS-3) is COMPLETE: 9 of 9 Stories Done. Every Stage-0 spec and decision is
+written, locked, and reflected on the board (data strategy, both eval specs, moat spec, base schema,
+both ADRs), and the repo plumbing (SS-1.2) is live: code is committed on `main`, pushed to
+github.com/davidmjackson/sight, and GitHub Actions CI (ruff + pytest) ran GREEN on push. The other 7
+Epics are empty by design. Next up is Stage 1 (ingestion + RAG core), which opens now that the
+Stage gate is cleared. Eval-first still governs: no feature code before the eval it must pass exists.
 
 ## Tracking setup (done)
 - Jira project: key SS, name SprintSight, team-managed (next-gen).
@@ -35,7 +32,7 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 
 ## Foundation Stories
 - SS-1.1 Set up Jira tracking — DONE.
-- SS-1.2 (SS-11) Repo, CLAUDE.md, HANDOVER.md, secrets, CI — IN PROGRESS (board already there). Done: docs/jira/workflow.md, root CLAUDE.md/HANDOVER.md/README.md, .env.example; git init on `main`; .gitignore (real .env + .venv + caches ignored, .env.example tracked — verified); pyproject.toml (ruff + pytest config); .github/workflows/ci.yml (checkout -> setup-python 3.11 -> pip install .[dev] -> ruff check -> pytest); tests/test_smoke.py placeholder. ruff + pytest run GREEN locally (RC 0). Outstanding before Done: (1) initial commit (everything staged, none committed); (2) create a remote (GitHub) and push so CI actually runs and the "green on push" AC is proven. Both await owner go-ahead (outward-facing).
+- SS-1.2 (SS-11) Repo, CLAUDE.md, HANDOVER.md, secrets, CI — DONE. Repo committed on `main` (initial commit 983324a) and pushed to github.com/davidmjackson/sight. .gitignore (real .env + .venv + caches ignored, .env.example tracked — verified); pyproject.toml (ruff + pytest config); .github/workflows/ci.yml (checkout -> setup-python 3.11 -> pip install .[dev] -> ruff check -> pytest); tests/test_smoke.py placeholder. CI ran GREEN on push (Actions run 27703300519, lint-and-test passed). Minor follow-up (non-blocking): bump checkout/setup-python action versions when convenient (Node 20 deprecation warning).
 - SS-1.3 Data strategy — LOCKED; board: DONE. docs/data/data-strategy.md.
 - SS-1.4 Watermelon eval spec — LOCKED (deterministic grading); board: DONE. docs/evals/watermelon-eval.md.
 - SS-1.5 Report-quality eval spec — LOCKED (audience profiles confirmed); board: DONE. docs/evals/report-quality-eval.md.
@@ -92,11 +89,9 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 - Eval-first: no feature code before the eval it must pass exists.
 
 ## First actions in the new thread
-1. Close SS-1.2 (SS-11) — the only open Stage-0 Story. Local plumbing is done and green locally; what
-   remains is owner-gated and outward-facing: (a) make the initial commit (all files staged, none
-   committed); (b) create a remote (GitHub) and push so Actions runs and the "green on push" AC is
-   proven; (c) then move SS-11 In Progress -> In Review -> Done with an AC-check comment. Do NOT mark
-   SS-11 Done until CI has actually run green on the remote.
-2. Board moves: DONE this session. SS-1.6/1.8/1.9 are Done (Backlog -> To Do -> In Review -> Done, AC
-   comments posted); SS-1.7 was already Done. Nothing else to transition until SS-11 closes.
-3. Then Stage 0 closes and Stage 1 (ingestion + RAG core) begins, eval-first: no feature code before the eval it must pass exists.
+Stage 0 is closed (9/9 Done) and the repo is live on GitHub with green CI. Stage 1 (ingestion + RAG
+core) is now open. Per the eval-first rule, the first Stage-1 move is the eval harness, NOT feature
+code: stand up the SS-1.4 watermelon eval and SS-1.5 report-quality eval against the SS-1.3 scenario
+data (four teams, two sprints) before any ingestion/RAG feature lands. The schema (docs/schema) is the
+target shape; turn the relevant parts into migrations eval-first. Create Stage-1 Stories under their
+Epic before building. Optional housekeeping: bump the CI action versions (Node 20 deprecation warning).
