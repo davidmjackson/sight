@@ -92,6 +92,6 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 Stage 0 is closed (9/9 Done) and the repo is live on GitHub with green CI. Stage 1 (Ingestion + RAG
 Core, Epic SS-2) is open and its 7 Stories are CREATED in Backlog (full map + eval-first order:
 docs/jira/stage-1-stories.md). Build order, eval-first:
-1. SS-2.1 (SS-19) generate synthetic corpus + ground-truth labels — the fixtures everything needs. START HERE. Move Backlog -> To Do -> In Progress.
-2. Then SS-2.2 (SS-21) eval harness + SS-2.4 (SS-20) migrations (parallelisable); then SS-2.3 (SS-18) watermelon eval (lands RED); then SS-2.5 (SS-24) ingestion -> SS-2.6 (SS-23) retrieval; then SS-2.7 (SS-22) detector turns the eval GREEN.
+1. SS-2.1 (SS-19) synthetic corpus + ground-truth labels — DONE (committed 776e719). 36 artifacts under data/corpus/, hand-authored truth at data/ground-truth/labels.yaml, conventions in data/README.md. Verified: ids match manifest, no orphans, expected_evidence resolves, numbers consistent, cross-team thread reconcilable + the RAID gap confirmed. The fixtures every other Stage-1 Story consumes.
+2. NEXT: SS-2.2 (SS-21) eval harness + SS-2.4 (SS-20) migrations (parallelisable, both Backlog). Then SS-2.3 (SS-18) watermelon eval (lands RED); then SS-2.5 (SS-24) ingestion -> SS-2.6 (SS-23) retrieval; then SS-2.7 (SS-22) detector turns the eval GREEN.
 Out of Stage-1 scope by decision: SS-1.5 report eval opens Stage 2 (Epic SS-1); portfolio/watermelon UI is Stage 6 (SS-6). Optional housekeeping: bump CI action versions (Node 20 deprecation warning).
