@@ -101,21 +101,24 @@ def run_suite(cases: list[Case], subject: Subject, tracer: Tracer | None = None)
     tracer = tracer or get_tracer()
     results: list[CaseResult] = []
 
-    for case in cases:
-        with tracer.span(f"case:{case.name}"):
-            try:
-                output = subject(case.inputs)
-                checks = [check(output) for check in case.assertions]
-                results.append(
-                    CaseResult(
-                        name=case.name,
-                        passed=all(c.passed for c in checks),
-                        assertions=checks,
+    try:
+        for case in cases:
+            with tracer.span(f"case:{case.name}"):
+                try:
+                    output = subject(case.inputs)
+                    checks = [check(output) for check in case.assertions]
+                    results.append(
+                        CaseResult(
+                            name=case.name,
+                            passed=all(c.passed for c in checks),
+                            assertions=checks,
+                        )
                     )
-                )
-            except Exception as exc:  # noqa: BLE001 - a bad case must not kill the suite
-                results.append(
-                    CaseResult(name=case.name, passed=False, assertions=[], error=repr(exc))
-                )
+                except Exception as exc:  # noqa: BLE001 - a bad case must not kill the suite
+                    results.append(
+                        CaseResult(name=case.name, passed=False, assertions=[], error=repr(exc))
+                    )
+    finally:
+        tracer.flush()
 
     return SuiteReport(results=results)

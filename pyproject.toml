@@ -19,7 +19,7 @@ dev = [
 ]
 # Langfuse is the eval/observability backend; optional so evals run without it (see tracing.py).
 eval = [
-  "langfuse>=2",
+  "langfuse>=4",
 ]
 
 [tool.setuptools.packages.find]

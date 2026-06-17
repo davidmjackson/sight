@@ -1,9 +1,10 @@
-"""Optional Langfuse tracing for eval runs.
+"""Optional Langfuse tracing for eval runs (Langfuse SDK v4).
 
-Langfuse is the observability/eval backend (per the stack). It is wired here but kept
-strictly optional: with no credentials configured — or the package not installed — the
-harness uses a no-op tracer so evals run identically in CI. When LANGFUSE_PUBLIC_KEY /
-LANGFUSE_SECRET_KEY are set, runs are traced.
+Langfuse is the observability/eval backend (per the stack). Wiring is kept strictly
+optional: with no credentials configured — or the package not installed — the harness
+uses a no-op tracer so evals run identically in CI. When LANGFUSE_PUBLIC_KEY /
+LANGFUSE_SECRET_KEY (and optionally LANGFUSE_HOST) are set, runs are traced; the v4
+client reads those env vars itself.
 """
 
 import os
@@ -16,6 +17,7 @@ class Tracer(Protocol):
     """Minimal tracing surface the harness depends on."""
 
     def span(self, name: str) -> "object": ...
+    def flush(self) -> None: ...
 
 
 class NoOpTracer:
@@ -25,24 +27,26 @@ class NoOpTracer:
     def span(self, name: str) -> Iterator[None]:
         yield None
 
+    def flush(self) -> None:
+        pass
+
 
 class LangfuseTracer:
-    """Thin adapter over a Langfuse client. Each span becomes a trace event."""
+    """Adapter over a Langfuse v4 client. Each span becomes an observation/trace."""
 
     def __init__(self, client: object) -> None:
         self._client = client
 
     @contextmanager
     def span(self, name: str) -> Iterator[None]:
-        # Langfuse client APIs vary by version; trace best-effort and never fail the run.
-        start = getattr(self._client, "trace", None)
-        handle = start(name=name) if callable(start) else None
-        try:
+        # start_as_current_observation is itself a context manager in v4.
+        with self._client.start_as_current_observation(name=name, as_type="span"):
             yield None
-        finally:
-            end = getattr(handle, "end", None)
-            if callable(end):
-                end()
+
+    def flush(self) -> None:
+        flush = getattr(self._client, "flush", None)
+        if callable(flush):
+            flush()
 
 
 def _configured() -> bool:
@@ -54,7 +58,7 @@ def get_tracer() -> Tracer:
     if not _configured():
         return NoOpTracer()
     try:
-        from langfuse import Langfuse  # type: ignore[import-not-found]
+        from langfuse import get_client  # type: ignore[import-not-found]
     except ImportError:
         return NoOpTracer()
-    return LangfuseTracer(Langfuse())
+    return LangfuseTracer(get_client())
