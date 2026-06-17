@@ -89,9 +89,9 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 - Eval-first: no feature code before the eval it must pass exists.
 
 ## First actions in the new thread
-Stage 0 is closed (9/9 Done) and the repo is live on GitHub with green CI. Stage 1 (ingestion + RAG
-core) is now open. Per the eval-first rule, the first Stage-1 move is the eval harness, NOT feature
-code: stand up the SS-1.4 watermelon eval and SS-1.5 report-quality eval against the SS-1.3 scenario
-data (four teams, two sprints) before any ingestion/RAG feature lands. The schema (docs/schema) is the
-target shape; turn the relevant parts into migrations eval-first. Create Stage-1 Stories under their
-Epic before building. Optional housekeeping: bump the CI action versions (Node 20 deprecation warning).
+Stage 0 is closed (9/9 Done) and the repo is live on GitHub with green CI. Stage 1 (Ingestion + RAG
+Core, Epic SS-2) is open and its 7 Stories are CREATED in Backlog (full map + eval-first order:
+docs/jira/stage-1-stories.md). Build order, eval-first:
+1. SS-2.1 (SS-19) generate synthetic corpus + ground-truth labels — the fixtures everything needs. START HERE. Move Backlog -> To Do -> In Progress.
+2. Then SS-2.2 (SS-21) eval harness + SS-2.4 (SS-20) migrations (parallelisable); then SS-2.3 (SS-18) watermelon eval (lands RED); then SS-2.5 (SS-24) ingestion -> SS-2.6 (SS-23) retrieval; then SS-2.7 (SS-22) detector turns the eval GREEN.
+Out of Stage-1 scope by decision: SS-1.5 report eval opens Stage 2 (Epic SS-1); portfolio/watermelon UI is Stage 6 (SS-6). Optional housekeeping: bump CI action versions (Node 20 deprecation warning).
