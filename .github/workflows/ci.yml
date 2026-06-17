@@ -87,3 +87,6 @@ jobs:
               raise exception 'found chunks with null embedding';
             end if;
           end \$\$;"
+
+      - name: Retrieval smoke (pgvector search returns cited results)
+        run: python scripts/retrieve_smoke.py
