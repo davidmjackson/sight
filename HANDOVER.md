@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-17 (Claude Code session: STAGE 0 CLOSED, 9/9 Foundation Stories Done. Repo initialised on `main`, pushed to github.com/davidmjackson/sight, CI green on push (Actions run 27703300519); SS-1.6/1.8/1.9 walked Backlog -> Done and SS-1.2/SS-11 In Progress -> Done, all with AC-check comments; SS-1.7 was already Done). System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-17 (Claude Code session: STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -10,12 +10,22 @@ Last updated: 2026-06-17 (Claude Code session: STAGE 0 CLOSED, 9/9 Foundation St
 - docs/ specs are shared by both. Principles live in the brain dump, state lives here, build conventions live in CLAUDE.md. Each fact has one home.
 
 ## Where we are
-Stage 0 (Foundation, Epic SS-3) is COMPLETE: 9 of 9 Stories Done. Every Stage-0 spec and decision is
-written, locked, and reflected on the board (data strategy, both eval specs, moat spec, base schema,
-both ADRs), and the repo plumbing (SS-1.2) is live: code is committed on `main`, pushed to
-github.com/davidmjackson/sight, and GitHub Actions CI (ruff + pytest) ran GREEN on push. The other 7
-Epics are empty by design. Next up is Stage 1 (ingestion + RAG core), which opens now that the
-Stage gate is cleared. Eval-first still governs: no feature code before the eval it must pass exists.
+Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
+Stage 1 (7/7): SS-19 synthetic corpus, SS-21 eval harness (+Langfuse), SS-18 watermelon eval,
+SS-20 schema migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. End-to-end the
+watermelon eval is GREEN at the showcase bar (4/4 classification, 4/4 evidence) and the eval-first
+chain held throughout (eval landed red, detector turned it green). Code: sprintsight/{evals,ingest,
+retrieval,detector.py}, db/migrations/, data/ corpus. CI has two jobs: lint-and-test (ruff + 23
+tests) and `db` (migrate + ingest + retrieve on pgvector:pg16) — both green on push.
+
+Next is Stage 2 (Status Report Agent, Epic SS-1). Per eval-first, its opener is implementing the
+SS-1.5 report-quality eval (docs/evals/report-quality-eval.md) on the existing harness, then the
+report agent that turns it green. Create the Stage-2 Stories under SS-1 before building.
+
+Still-open real-wiring items (not blocking, all flagged on tickets): provision a persistent Supabase
+Postgres+pgvector (only CI's ephemeral DB used so far); finalise the in-region 1024-dim embedding
+model (D1) to replace HashingEmbedder; populate artifact.team_id for DB-side team scoping. These
+become load-bearing when the system runs outside CI / on the real embedding model.
 
 ## Tracking setup (done)
 - Jira project: key SS, name SprintSight, team-managed (next-gen).
@@ -83,23 +93,28 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 - docs/adr/ADR-0002-auth-and-residency.md — SS-1.8 (managed Supabase UK/EU).
 - sprintsight-braindump.md — project context (in Project knowledge).
 
-## Do NOT do yet
-- Do not generate the data corpus or write the eval harness. That is early Stage 1.
-- Keep all specs as paper specs until Stage 0 closes.
-- Eval-first: no feature code before the eval it must pass exists.
+## Stage 1 build log (Epic SS-2 — all DONE)
+Eval-first order held throughout; full story map in docs/jira/stage-1-stories.md.
+1. SS-2.1 (SS-19) synthetic corpus + ground-truth labels — 36 artifacts under data/corpus/, hand-authored truth at data/ground-truth/labels.yaml.
+2. SS-2.2 (SS-21) eval harness — sprintsight/evals/ (Case/Assertion/SuiteReport/run_suite + fixtures loader + Langfuse v4, provisioned Cloud EU).
+3. SS-2.3 (SS-18) watermelon eval (SS-1.4) — sprintsight/evals/watermelon.py; 4 cases, dual gates; landed RED by design (null_detector).
+4. SS-2.4 (SS-20) migrations — db/migrations/0001_init.sql (schema Groups 2/3/5, pgvector, vector(1024)); applied on pgvector:pg16 in CI.
+5. SS-2.5 (SS-24) ingestion — sprintsight/ingest/ (chunker + Store [InMemory/Postgres] + Embedder [HashingEmbedder stand-in, D1 TODO]); idempotent on content_hash.
+6. SS-2.6 (SS-23) retrieval — sprintsight/retrieval/ (InMemoryRetriever + PostgresRetriever pgvector <=>).
+7. SS-2.7 (SS-22) baseline detector — sprintsight/detector.py; deterministic, recommend-only; turned the watermelon eval GREEN (4/4 + 4/4). scripts/run_watermelon_eval.py exits 0.
 
-## First actions in the new thread
-Stage 0 is closed (9/9 Done) and the repo is live on GitHub with green CI. Stage 1 (Ingestion + RAG
-Core, Epic SS-2) is open and its 7 Stories are CREATED in Backlog (full map + eval-first order:
-docs/jira/stage-1-stories.md). Build order, eval-first:
-1. SS-2.1 (SS-19) synthetic corpus + ground-truth labels — DONE (committed 776e719). 36 artifacts under data/corpus/, hand-authored truth at data/ground-truth/labels.yaml, conventions in data/README.md. Verified: ids match manifest, no orphans, expected_evidence resolves, numbers consistent, cross-team thread reconcilable + the RAID gap confirmed. The fixtures every other Stage-1 Story consumes.
-2. SS-2.2 (SS-21) eval harness + SS-2.4 (SS-20) migrations — DONE (committed 9df8664; CI run 27704946566 green: lint-and-test + a new `migrations` job applying 0001_init.sql on pgvector/pgvector:pg16). Harness at sprintsight/evals/ (Case/Assertion/SuiteReport/run_suite + fixtures loader + optional Langfuse). Migration db/migrations/0001_init.sql = schema Groups 2/3/5. Langfuse: PROVISIONED (Cloud EU, project `sprintsight`); keys in gitignored `.env`; live trace verified via scripts/verify_langfuse.py (auth_check + flushed trace). SDK is v4 (get_client + start_as_current_observation; langfuse>=4). CI keeps Langfuse no-op (no keys in CI by design). SS-21 residual fully closed.
-3. SS-2.3 (SS-18) watermelon eval (SS-1.4) — DONE (committed 314d247; CI run 27707486495 green). sprintsight/evals/watermelon.py: 4 cases on the harness from corpus fixtures; dual gates (classification + evidence); Verdict matches the SS-1.4 contract; null_detector keeps it RED by design (scripts/run_watermelon_eval.py exits non-zero, pytest asserts the expected red so CI stays green).
-4. SS-2.5 (SS-24) ingestion pipeline — DONE (committed on main; CI run 27708133513 green incl. the `db` job on pgvector:pg16). sprintsight/ingest/: paragraph chunker (exact offsets), injected Store (InMemoryStore + PostgresStore via lazy psycopg, `db` extra) + Embedder (offline HashingEmbedder 1024-dim; real in-region model still TODO per D1), idempotent ingest_corpus keyed on content_hash. scripts/ingest.py. CI proves: migrate -> ingest -> idempotent 2nd pass -> 36 artifacts all embedded.
-5. SS-2.6 (SS-23) RAG retrieval — DONE (committed on main; CI run 27708508590 green incl. a pgvector retrieval smoke). sprintsight/retrieval/: InMemoryRetriever (cosine ranking, team/sprint scoping, full provenance incl artifact_id — the path the detector uses) + PostgresRetriever (pgvector <=> search). scripts/retrieve_smoke.py.
-6. NEXT (final Stage-1 story): SS-2.7 (SS-22) baseline watermelon detector. Build over the InMemoryRetriever + corpus fixtures; compute signals (burn ratio, velocity decline, carry-over growth, flat burndown, dependency slip, RAID gap) and reconcile reported-vs-actual to emit the SS-1.4 Verdict; recommend-only. Goal: turn the SS-2.3 watermelon eval GREEN (4/4 classification + 4/4 evidence) and flip scripts/run_watermelon_eval.py to exit 0. Stage-1: 6 of 7 done (SS-19/20/21/18/24/23).
+## First actions in the new thread (Stage 2, Epic SS-1 — Status Report Agent)
+Eval-first, same pattern as Stage 1:
+1. Create the Stage-2 Stories under Epic SS-1 (do not set status on create). Likely first: implement the SS-1.5 report-quality eval; then the report-writer agent; then audience-tuning + grounding/fabrication gates.
+2. Implement the SS-1.5 report eval (docs/evals/report-quality-eval.md) on the existing harness (sprintsight/evals/) using the corpus fixtures + the thin-data fabrication trap. It should land RED until the report agent exists.
+3. Build the report agent (the report-writer node, ADR-0001) to turn that eval green: audience-tuned (exec/programme/team), every claim cited, refuses to fabricate on thin data.
 
-Note for SS-2.7: the detector must read the structured numbers (committed/completed/carry-over/velocity, burndown) and the reported RAG. Those live inside burndown/status artifact bodies in the corpus; the detector will parse them from the team's artifacts (the eval feeds it artifacts, not DB rows). Evidence ids must be the corpus artifact_ids (e.g. burndown-atlas-s15) — InMemoryRetriever/fixtures carry these.
+## Open real-wiring items (not blocking the build; all flagged on tickets)
+- Provision a persistent Supabase Postgres+pgvector (only CI's ephemeral DB used so far).
+- Finalise the in-region 1024-dim embedding model (D1) to replace HashingEmbedder; semantic retrieval recall depends on this.
+- Populate artifact.team_id (+ load delivery-domain rows: team/sprint/metrics/burndown) for DB-side team scoping and a DB-backed detector.
+- Stage 2+ will need the Anthropic API key wired (.env) for the actual report-writer LLM calls.
 
-Still-open real-wiring items (not blocking): provision Supabase Postgres+pgvector (CI uses an ephemeral DB); finalise the in-region 1024-dim embedding model (D1) to replace HashingEmbedder; populate artifact.team_id for DB-side team scoping.
+## Eval-first guardrail (still governs)
+No feature code before the eval it must pass exists. The report agent (Stage 2) comes AFTER the SS-1.5 eval is implemented and red.
 Out of Stage-1 scope by decision: SS-1.5 report eval opens Stage 2 (Epic SS-1); portfolio/watermelon UI is Stage 6 (SS-6). Optional housekeeping: bump CI action versions (Node 20 deprecation warning).
