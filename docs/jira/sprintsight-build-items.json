@@ -1,0 +1,167 @@
+{
+  "project_key": "SS",
+  "instructions": "Create all Epics first. Record each Epic's returned key keyed by its summary. Then create each Story, setting the Jira Parent field to the key of the Epic whose summary matches the Story's parent_ref. Put the full description (including the Acceptance Criteria section) in the description field. Apply labels exactly as written.",
+  "items": [
+    {
+      "issue_type": "Epic",
+      "summary": "Foundation & De-risking",
+      "parent_ref": null,
+      "labels": [
+        "stage-0"
+      ],
+      "description": "Goal: lock every decision and produce every artifact required before feature code. No Stage 1 code starts until the decision and eval-spec Stories here are Done.\n\nMaps to: Brain dump Stage 0 plus the five agreed Next Actions."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Ingestion + RAG Core",
+      "parent_ref": null,
+      "labels": [
+        "stage-1"
+      ],
+      "description": "Goal: parse artifacts, embed, store in pgvector, retrieve with citations. Eval harness live from day one.\n\nMaps to: Stage 1."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Status Report Agent",
+      "parent_ref": null,
+      "labels": [
+        "stage-2"
+      ],
+      "description": "Goal: single agent, three audience-tuned reports, every claim cited. First demoable MVP.\n\nMaps to: Stage 2."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Orchestration + Risk Radar",
+      "parent_ref": null,
+      "labels": [
+        "stage-3"
+      ],
+      "description": "Goal: LangGraph graph (retrieval + risk reconciliation + report-writer). Adds risk radar and RAID hygiene.\n\nMaps to: Stage 3."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Observability + Evals",
+      "parent_ref": null,
+      "labels": [
+        "stage-4"
+      ],
+      "description": "Goal: Langfuse traces, reasoning-log UI, expanded eval suite.\n\nMaps to: Stage 4."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Accounts / Auth / Admin",
+      "parent_ref": null,
+      "labels": [
+        "stage-5"
+      ],
+      "description": "Goal: single-tenant auth, simple roles (Admin, Delivery Manager, Viewer), Suite tile integration.\n\nMaps to: Stage 5."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "Portfolio + Watermelon",
+      "parent_ref": null,
+      "labels": [
+        "stage-6"
+      ],
+      "description": "Goal: normalise across teams, flag reported-green / actually-red, explain the disagreement. Enterprise headline.\n\nMaps to: Stage 6. Gated by the data strategy Story in Foundation."
+    },
+    {
+      "issue_type": "Epic",
+      "summary": "UX Polish + Connectors",
+      "parent_ref": null,
+      "labels": [
+        "stage-7"
+      ],
+      "description": "Goal: concept designs realised, MCP connectors live.\n\nMaps to: Stage 7."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Set up Jira tracking",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0"
+      ],
+      "description": "Context: Tracking backbone for the whole build. Counts as Stage 0 work.\nWhat to do: Create the SS project with Epic and Story issue types, the agreed statuses, and the label set.\nOut of scope: Multi-tenant config; automation rules beyond the status flow.\nRefs: Plan ref F1.\n\nAcceptance Criteria:\n- Project created with key SS.\n- Issue types: Epic and Story.\n- Statuses live: Backlog, To Do, In Progress, In Review, Done.\n- Blocked available as a flag, not a status.\n- Description and Acceptance Criteria visible on the Story screen.\n- Labels created: stage-0 to stage-7, eval, security, decision, moat, data.\n- This Epic and its Stories exist on the board."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Repo, CLAUDE.md, HANDOVER.md, secrets, CI skeleton",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0"
+      ],
+      "description": "Context: Project scaffolding so the eval harness plugs in at Stage 1.\nWhat to do: Initialise repo at the dev path. Add CLAUDE.md (stack, conventions, eval-first rule, security rules), a HANDOVER.md template, secrets management, and minimal CI.\nOut of scope: Feature code; app schema (separate Story).\nRefs: Brain dump Stage 0. Plan ref F2.\n\nAcceptance Criteria:\n- Repo initialised with run instructions in README.\n- CLAUDE.md present and complete (stack, conventions, eval-first, security).\n- HANDOVER.md template present.\n- Secrets via env or manager; .env.example committed; real .env gitignored.\n- CI runs lint and test on push; green on an empty suite."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Data strategy: multi-team demo data with genuine watermelon divergence",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "data"
+      ],
+      "description": "Context: Use case 3 needs several teams where reported status and underlying signals genuinely diverge. One dataset rarely produces a convincing watermelon. This gates the headline.\nWhat to do: Decide and document the data source and method (hand-authored synthetic, LLM-generated then curated, or anonymized history reshaped into multiple teams). Anonymise.\nOut of scope: Building the detector (Portfolio + Watermelon epic).\nRefs: Brain dump 3, 8. Gates Portfolio + Watermelon. Feeds the watermelon eval. Plan ref F3.\n\nAcceptance Criteria:\n- Strategy documented: source, method, anonymisation, why it is believable.\n- Covers 3+ teams across 2+ sprints with RAID entries, status reports, and chat artifacts.\n- At least one seeded watermelon with documented ground truth.\n- At least one genuine-green and one genuine-amber team for contrast.\n- Ground-truth labels in a form the eval harness can consume."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Eval spec: watermelon detection",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "eval"
+      ],
+      "description": "Context: The tractable eval. Defines the target for the detector.\nWhat to do: Write the eval spec on paper (no code) against the data strategy ground truth.\nOut of scope: Implementing the harness (Stage 1).\nRefs: Depends on the data strategy Story. Plan ref F4.\n\nAcceptance Criteria:\n- Cases defined: true watermelon, true green, true amber, one tricky near-miss.\n- Each case has expected classification plus the evidence the reasoning must cite.\n- Pass = correct flag AND cites the right evidence, not just the label.\n- Scoring method defined.\n- Documented as the watermelon eval target."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Eval spec: status report quality",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "eval"
+      ],
+      "description": "Context: The hard eval. Report quality is subjective, so assertions must be objective and checkable.\nWhat to do: Write the eval spec for audience-tuned reports.\nOut of scope: Implementation.\nRefs: Brain dump use case 1. Plan ref F5.\n\nAcceptance Criteria:\n- Assertions defined: every claim cited; no claim without a backing artifact; audience variant carries the right detail level; required sections present.\n- At least one trap case with thin source data, to prove the agent declines to fabricate.\n- Pass criteria and scoring defined.\n- Documented as the status-report eval target."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "ADR: cut agent graph to three nodes",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "decision"
+      ],
+      "description": "Context: Section 10 over-specifies six agents before any eval exists. Ship on three.\nWhat to do: Record the decision. Nodes: retrieval, risk/reconciliation, report-writer. Planner, analysis, and critic stay as functions or prompts until evals justify promotion.\nOut of scope: Building the agents.\nRefs: Brain dump 10. Plan ref F6.\n\nAcceptance Criteria:\n- ADR in decisions log: three nodes, rationale, what was cut and why.\n- Promotion criteria stated (what evidence justifies a new node).\n- Brain dump section 10 updated."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Moat spec: three methodology-aware behaviours",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "moat"
+      ],
+      "description": "Context: Agile expertise encoded in logic is asserted but undefined. This is the real differentiator vs generic RAG-over-docs.\nWhat to do: Define three concrete, testable delivery-expert behaviours. Candidates: cross-team dependency slip; flat burndown vs reported on-track; risk raised in chat but missing from the RAID log.\nOut of scope: Implementation.\nRefs: Project instructions (moat). Referenced by the eval specs. Plan ref F7.\n\nAcceptance Criteria:\n- Three behaviours, each with trigger condition, expected agent action, and how it is evaluated.\n- Each traceable to a use case.\n- Documented as the moat spec and referenced by the eval Stories."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Lock auth provider + hosting residency",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "decision",
+        "security"
+      ],
+      "description": "Context: Coupled decisions. Gov target favours self-host, which rules out some SaaS auth.\nWhat to do: Decide provider and region together. On the table: managed Supabase UK/EU, gov self-host as a future swap.\nOut of scope: Building auth (Accounts epic).\nRefs: Brain dump 6, 7, 8; decisions 2, 5, 7. Plan ref F8.\n\nAcceptance Criteria:\n- Decision recorded: provider plus region.\n- Coupling rationale documented.\n- Swap points for gov self-host listed.\n- Brain dump decisions 2, 5, 7 updated to locked."
+    },
+    {
+      "issue_type": "Story",
+      "summary": "Base schema design (Postgres + pgvector)",
+      "parent_ref": "Foundation & De-risking",
+      "labels": [
+        "stage-0",
+        "security"
+      ],
+      "description": "Context: Base relational and vector schema for ingestion, citations, audit/reasoning log, and single-tenant accounts.\nWhat to do: Design schema only. Flag for security review before Stage 1.\nOut of scope: Migrations and implementation (Stage 1).\nRefs: Brain dump 6, 8. Plan ref F9.\n\nAcceptance Criteria:\n- Tables for artifacts, embeddings, citations, audit/reasoning log, users/roles.\n- Every persisted artifact has provenance (source, retrieved-at) to support citations.\n- Encryption-at-rest and ZDR assumptions noted.\n- Documented and flagged for security review before Stage 1."
+    }
+  ]
+}
