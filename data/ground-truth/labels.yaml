@@ -1,0 +1,164 @@
+# Sprintsight — Ground-truth labels (SS-2.1 / SS-1.3)
+# Authoritative source of truth for the synthetic corpus. Hand-authored.
+# One record per team per sprint. Surface artifacts in corpus/<team>/ are generated to MATCH this.
+# Schema: data/README.md §"Authoring rules"; eval consumer: docs/evals/watermelon-eval.md.
+#
+# status values: green | amber | red
+# metrics are the canonical figures; every burndown/status artifact must agree with them.
+# expected_evidence: artifact_ids that MUST be cited for the watermelon eval to pass that case.
+
+sprints:
+  "14": { start: 2026-05-04, end: 2026-05-15 }
+  "15": { start: 2026-05-18, end: 2026-05-29 }
+
+# Cross-team thread (the moat case): Atlas depends on "Draco Auth API v2" (Draco ticket DRACO-412),
+# originally due end of Sprint 14, slipped to Sprint 16. Visible in Draco's data + one Atlas chat
+# message (slack-atlas-s15-msg-dep); ABSENT from Atlas's RAID and status report.
+dependency_thread:
+  name: "Draco Auth API v2"
+  provider_team: Draco
+  consumer_team: Atlas
+  provider_ticket: DRACO-412
+  originally_due: 2026-05-15      # end of Sprint 14
+  slipped_to: "Sprint 16"
+  raised_in: slack-atlas-s15-msg-dep
+  missing_from: [raid-atlas-s15, status-atlas-s15]
+  reconcilable_from: [jira-draco-s15-authapi, raid-draco-s15]
+
+records:
+
+  # ================= ATLAS — the WATERMELON =================
+  - team: Atlas
+    sprint: 14
+    reported_status: green
+    actual_status: amber
+    is_watermelon: true
+    metrics: { committed_points: 40, completed_points: 17, carry_over_stories: 2, velocity: 17 }
+    divergence_reasons: [flat_burndown, early_carry_over, low_completion_vs_commit]
+    moat_behaviours: [flat_burndown_vs_green]
+    artifacts:
+      - { id: status-atlas-s14,        kind: status }
+      - { id: raid-atlas-s14,          kind: raid }
+      - { id: burndown-atlas-s14,      kind: burndown }
+      - { id: slack-atlas-s14-msg-001, kind: chat, note: "decoy / routine standup chatter" }
+    expected_evidence: [burndown-atlas-s14, status-atlas-s14]
+
+  - team: Atlas
+    sprint: 15
+    reported_status: green
+    actual_status: red
+    is_watermelon: true
+    metrics: { committed_points: 40, completed_points: 12, carry_over_stories: 5, velocity: 12 }
+    divergence_reasons:
+      - flat_burndown_two_sprints
+      - velocity_decline_30pct        # 17 -> 12
+      - carry_over_growth             # 2 -> 5
+      - vendor_dependency_slip_unlogged
+    moat_behaviours: [flat_burndown_vs_green, risk_in_chat_not_raid, cross_team_dependency_slip]
+    artifacts:
+      - { id: status-atlas-s15,        kind: status, note: "claims 'on track, minor items only' — contradicts data" }
+      - { id: raid-atlas-s15,          kind: raid,   note: "benign items only; Draco dependency NOT logged (the gap)" }
+      - { id: burndown-atlas-s15,      kind: burndown, note: "flat: ~12 of 40 burned" }
+      - { id: slack-atlas-s15-msg-dep, kind: chat,   note: "'heads up, Draco's auth API still isn't ready, this will bite us'" }
+      - { id: slack-atlas-s15-msg-001, kind: chat,   note: "decoy / unrelated chatter" }
+    expected_evidence: [burndown-atlas-s15, slack-atlas-s15-msg-dep, status-atlas-s15]
+
+  # ================= BOREAS — TRUE GREEN =================
+  - team: Boreas
+    sprint: 14
+    reported_status: green
+    actual_status: green
+    is_watermelon: false
+    metrics: { committed_points: 38, completed_points: 36, carry_over_stories: 1, velocity: 36 }
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-boreas-s14,        kind: status }
+      - { id: raid-boreas-s14,          kind: raid }
+      - { id: burndown-boreas-s14,      kind: burndown }
+      - { id: slack-boreas-s14-msg-001, kind: chat, note: "routine, healthy" }
+    expected_evidence: [burndown-boreas-s14, raid-boreas-s14]
+
+  - team: Boreas
+    sprint: 15
+    reported_status: green
+    actual_status: green
+    is_watermelon: false
+    metrics: { committed_points: 40, completed_points: 38, carry_over_stories: 1, velocity: 38 }
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-boreas-s15,        kind: status }
+      - { id: raid-boreas-s15,          kind: raid, note: "current, owned, mitigated" }
+      - { id: burndown-boreas-s15,      kind: burndown, note: "tracking to plan" }
+      - { id: slack-boreas-s15-msg-001, kind: chat, note: "routine, healthy" }
+    expected_evidence: [burndown-boreas-s15, raid-boreas-s15]
+
+  # ================= CYGNUS — HONEST AMBER =================
+  - team: Cygnus
+    sprint: 14
+    reported_status: amber
+    actual_status: amber
+    is_watermelon: false
+    metrics: { committed_points: 34, completed_points: 27, carry_over_stories: 3, velocity: 27 }
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-cygnus-s14,        kind: status, note: "openly reports amber + the slip" }
+      - { id: raid-cygnus-s14,          kind: raid,   note: "slip + resourcing gap logged honestly" }
+      - { id: burndown-cygnus-s14,      kind: burndown }
+      - { id: slack-cygnus-s14-msg-001, kind: chat }
+    expected_evidence: [status-cygnus-s14, raid-cygnus-s14]
+
+  - team: Cygnus
+    sprint: 15
+    reported_status: amber
+    actual_status: amber
+    is_watermelon: false
+    metrics: { committed_points: 32, completed_points: 25, carry_over_stories: 3, velocity: 25 }
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-cygnus-s15,        kind: status, note: "openly reports amber + dependency slip + resourcing gap" }
+      - { id: raid-cygnus-s15,          kind: raid,   note: "same slip logged honestly, owned, with mitigation" }
+      - { id: burndown-cygnus-s15,      kind: burndown, note: "shows the slip honestly" }
+      - { id: slack-cygnus-s15-msg-001, kind: chat }
+    expected_evidence: [status-cygnus-s15, raid-cygnus-s15]
+
+  # ================= DRACO — TRICKY NEAR-MISS =================
+  - team: Draco
+    sprint: 14
+    reported_status: green
+    actual_status: green
+    is_watermelon: false
+    metrics: { committed_points: 36, completed_points: 33, carry_over_stories: 2, velocity: 33 }
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-draco-s14,        kind: status }
+      - { id: raid-draco-s14,          kind: raid }
+      - { id: burndown-draco-s14,      kind: burndown }
+      - { id: slack-draco-s14-msg-001, kind: chat }
+    expected_evidence: [burndown-draco-s14, status-draco-s14]
+
+  - team: Draco
+    sprint: 15
+    reported_status: amber
+    actual_status: amber
+    is_watermelon: false
+    # The trick: a late-sprint bug spike LOOKS alarming but is triaged and under control; the team
+    # reports amber honestly. A detector must NOT call this a watermelon. Draco also owns the auth
+    # API slip that Atlas depends on (jira-draco-s15-authapi) — the reconciliation counterpart.
+    metrics: { committed_points: 36, completed_points: 29, carry_over_stories: 3, velocity: 29, late_bug_spike: 18 }
+    divergence_reasons: []
+    moat_behaviours: []
+    decoy_signal: "late_bug_spike of 18 bugs, but triaged and burndown still on track -> resolves to amber, not red"
+    artifacts:
+      - { id: status-draco-s15,        kind: status, note: "honestly reports amber; mentions bug spike under control + auth API slip" }
+      - { id: raid-draco-s15,          kind: raid,   note: "bug spike logged + triaged; Draco Auth API v2 slip logged (DRACO-412)" }
+      - { id: burndown-draco-s15,      kind: burndown, note: "still broadly on track despite the spike" }
+      - { id: bugspike-draco-s15,      kind: jira,   note: "THE alarming signal: 18 bugs raised late sprint" }
+      - { id: triage-draco-s15,        kind: jira,   note: "evidence under control: triaged, severity-sorted, burndown OK, risk logged" }
+      - { id: jira-draco-s15-authapi,  kind: jira,   note: "DRACO-412 Auth API v2 delivery slipped to Sprint 16 — reconciles the Atlas dependency" }
+      - { id: slack-draco-s15-msg-001, kind: chat }
+    expected_evidence: [bugspike-draco-s15, triage-draco-s15]
