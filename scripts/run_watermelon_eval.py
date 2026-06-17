@@ -10,11 +10,12 @@ Exits non-zero if the suite is not fully green, so it can double as a CI/eval ga
 import json
 import sys
 
+from sprintsight.detector import detect
 from sprintsight.evals.watermelon import run_watermelon_eval
 
 
 def main() -> int:
-    report = run_watermelon_eval()
+    report = run_watermelon_eval(detect)
 
     print(json.dumps(report.summary(), indent=2))
     print("\nPer-case:")
