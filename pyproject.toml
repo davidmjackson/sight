@@ -21,6 +21,10 @@ dev = [
 eval = [
   "langfuse>=4",
 ]
+# Postgres + pgvector client for ingestion against a real DB (psycopg imported lazily).
+db = [
+  "psycopg[binary]>=3",
+]
 
 [tool.setuptools.packages.find]
 include = ["sprintsight*"]

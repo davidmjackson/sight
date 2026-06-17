@@ -25,7 +25,7 @@ jobs:
       - name: Test (pytest)
         run: pytest
 
-  migrations:
+  db:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -40,26 +40,50 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sprintsight
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install psql client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install psql client + package
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          python -m pip install --upgrade pip
+          pip install -e ".[db]"
 
       - name: Apply migrations
-        env:
-          PGPASSWORD: postgres
         run: |
           for f in db/migrations/*.sql; do
             echo "applying $f"
             psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -f "$f"
           done
 
-      - name: Verify core tables exist
-        env:
-          PGPASSWORD: postgres
+      - name: Ingest corpus (first pass)
+        run: python scripts/ingest.py
+
+      - name: Ingest corpus (second pass — must be idempotent)
         run: |
-          psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 \
-            -c "select count(*) from artifact;" \
-            -c "select count(*) from chunk;" \
-            -c "select count(*) from signal;"
+          out=$(python scripts/ingest.py)
+          echo "$out"
+          echo "$out" | grep -q '"ingested": 0' || { echo "NOT IDEMPOTENT"; exit 1; }
+          echo "$out" | grep -q '"skipped": 36' || { echo "EXPECTED 36 SKIPPED"; exit 1; }
+
+      - name: Verify rows (36 artifacts, chunks embedded)
+        run: |
+          psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -c "do \$\$
+          begin
+            if (select count(*) from artifact) <> 36 then
+              raise exception 'expected 36 artifacts, got %', (select count(*) from artifact);
+            end if;
+            if (select count(*) from chunk) = 0 then
+              raise exception 'no chunks written';
+            end if;
+            if (select count(*) from chunk where embedding is null) > 0 then
+              raise exception 'found chunks with null embedding';
+            end if;
+          end \$\$;"
