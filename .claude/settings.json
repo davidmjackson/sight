@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[SessionStart] Current state from HANDOVER.md — read before acting:\"; cat \"${CLAUDE_PROJECT_DIR:-/var/www/sight}/HANDOVER.md\" 2>/dev/null",
+            "statusMessage": "Loading HANDOVER.md"
+          }
+        ]
+      }
+    ]
+  }
+}
