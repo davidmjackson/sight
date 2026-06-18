@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-18 (Claude Code session: STAGE 2 arc 2 — LLM-backed report-writer — DONE and merged to main (374bf6c), CI green. The real Anthropic-backed report-writer node (ADR-0001) now runs behind the same `ReportWriter` seam; verified live (`--llm` eval 4/4 against the real API) with all sections genuinely LLM-authored and audience-distinct. `compose` stays the deterministic CI gate/fallback. Prior: STAGE 2 arc 1 — DONE: SS-25/26/27, report eval GREEN (4/4) and gating CI. STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-18 (Claude Code session: STAGE 3 — LangGraph three-node graph — DONE, branch stage3-langgraph-graph. `sprintsight/graph/` wired up: `GraphState` + three node functions (retrieval, risk, report_writer) + `build_graph`/`run` + graph-level adapters (`graph_detector`, `graph_writer`). Both evals now run THROUGH the graph and gate CI (watermelon 4/4 classification + 4/4 evidence; report-quality 4/4). `langgraph` added as a core dependency. Retrieval node does real CI-safe retrieval (InMemoryRetriever + HashingEmbedder) — chunks parked in state, not yet consumed downstream. `detector.py`/`report/`/`retrieval/` unmodified. Default path stays offline; CI never calls the API. Jira Story SS-29 (Epic SS-4). Prior: STAGE 2 arc 2 — DONE and merged to main (374bf6c); LLM-backed report-writer. STAGE 0 + STAGE 1 BOTH CLOSED. Repo on github.com/davidmjackson/sight; CI green. System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -38,11 +38,24 @@ migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. Watermelo
 db/migrations/, data/ corpus. CI: lint-and-test (ruff + pytest + report eval) and `db` job
 (migrate + ingest + retrieve on pgvector:pg16) — both green on push.
 
-Next in Stage 2 (optional, eval-first): extend eval cases the LLM now warrants — LLM-as-judge
-readability/tone (pulls a slice of Stage 4 forward), stricter audience differentiation, RAID
-cite-through, or surface a moat behaviour (e.g. B1 cross-team dependency slip) in the narrative
-with an eval asserting it. Otherwise Stage 3 (LangGraph: wire retrieval + risk + report-writer
-as the three nodes per ADR-0001).
+Stage 3 (LangGraph, Epic SS-4) — DONE. Jira Story SS-29.
+- Three-node LangGraph graph built in `sprintsight/graph/`: `GraphState` dataclass; node functions
+  `retrieval_node`, `risk_node`, `report_writer_node` (each `state -> dict`); `build_graph()`
+  constructs the linear `StateGraph`; `run(inputs, writer, retriever, k)` executes it end-to-end.
+- Graph-level adapters: `graph_detector(team_id, artifacts)` wraps the graph for the watermelon eval;
+  `graph_writer(team_id, artifacts, audience)` wraps it for the report eval. Both eval scripts
+  (`scripts/run_watermelon_eval.py`, `scripts/run_report_eval.py`) re-pointed through the graph.
+- Both evals GREEN through the graph: watermelon 4/4 classification + 4/4 evidence; report-quality
+  4/4 (all dimensions). Both gate CI (unchanged).
+- Retrieval node: calls `InMemoryRetriever` + `HashingEmbedder` CI-safe; chunks land in
+  `state["retrieved"]`; NOT yet consumed by risk or report-writer nodes (deferred — next arc).
+- `langgraph` added to `pyproject.toml` as a core dependency.
+- `detector.py`, `report/`, `retrieval/` — UNMODIFIED. Default path import-clean of `anthropic`.
+- Deferred follow-ups (not blocking): consume retrieved chunks downstream; node promotion per ADR-0001
+  triggers (evals must justify); swap InMemoryRetriever for PostgresRetriever in-graph.
+
+Next in Stage 2 (optional, eval-first, superseded by Stage 3): extend eval cases the LLM now
+warrants — LLM-as-judge readability/tone, stricter audience differentiation, RAID cite-through.
 
 Anthropic API key: a real sk-ant key is now wired in .env (len 108). NOTE the project has NO
 .env auto-loader (no load_dotenv) — live `--llm` runs must export ANTHROPIC_API_KEY into the env
