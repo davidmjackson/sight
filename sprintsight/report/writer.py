@@ -7,14 +7,35 @@ drop-in behind the same callable (open-wiring item, not built here).
 
 import re
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from sprintsight.detector import Metrics, parse_metrics, parse_reported_status
 from sprintsight.evals.fixtures import Artifact
-from sprintsight.report.audience import PROFILES
+from sprintsight.report.audience import PROFILES, AudienceProfile
 from sprintsight.report.contract import Claim, Report
 
 ReportWriter = Callable[[dict[str, Any]], Report]
+
+
+@dataclass
+class Facts:
+    """Deterministically grounded inputs for one report (single-sourced for compose + LLM)."""
+
+    team: str
+    audience: str
+    profile: AudienceProfile
+    burndown_id: str
+    status_id: str
+    raid_id: str
+    metrics: Metrics | None
+    rag: str
+    rag_cite: str
+    risks: list[str]
+    deps: list[str]
+    looking_ahead: str
+    claims: list[Claim]
+    insufficient: bool
 
 
 def null_writer(inputs: dict[str, Any]) -> Report:
@@ -76,8 +97,7 @@ def _looking_ahead(arts: dict[str, Artifact], status_id: str) -> str:
     return "Sprint 16 planning underway."
 
 
-def compose(inputs: dict[str, Any]) -> Report:
-    """Deterministic, audience-tuned, fully-cited report writer (the SS-1.5 subject)."""
+def _grounded_facts(inputs: dict[str, Any]) -> Facts:
     team: str = inputs["team"]
     audience: str = inputs["audience"]
     arts: dict[str, Artifact] = inputs["artifacts"]
@@ -87,44 +107,88 @@ def compose(inputs: dict[str, Any]) -> Report:
     status_id = f"status-{t}-s15"
     raid_id = f"raid-{t}-s15"
 
-    # Thin-data guard (fabrication gate): no burndown -> nothing to substantiate.
-    if burndown_id not in arts:
-        return Report(team=team, audience=audience, insufficient_evidence=True)
+    if burndown_id not in arts:  # thin-data guard (fabrication gate)
+        return Facts(
+            team,
+            audience,
+            profile,
+            burndown_id,
+            status_id,
+            raid_id,
+            None,
+            "",
+            "",
+            [],
+            [],
+            "",
+            [],
+            insufficient=True,
+        )
 
     metrics = parse_metrics(arts[burndown_id].body)
     rag = parse_reported_status(arts[status_id].body) if status_id in arts else "green"
     rag_cite = status_id if status_id in arts else burndown_id
     risks = _risk_lines(arts, raid_id)
     deps = _dependency_lines(arts, raid_id)
+    looking_ahead = _looking_ahead(arts, status_id)
 
     claims = [_rag_claim(rag, rag_cite)]
-    sections: dict[str, str] = {}
-
     if profile.name == "exec":
-        sections["overall_rag"] = f"Overall delivery status is {rag}."
-        top = risks[:3]
+        claims += [Claim(r, [raid_id]) for r in risks[:3]]
+    else:  # programme + team both carry metric claims and all risk claims
+        claims += _metric_claims(metrics, burndown_id)
+        claims += [Claim(r, [raid_id]) for r in risks]
+
+    return Facts(
+        team,
+        audience,
+        profile,
+        burndown_id,
+        status_id,
+        raid_id,
+        metrics,
+        rag,
+        rag_cite,
+        risks,
+        deps,
+        looking_ahead,
+        claims,
+        insufficient=False,
+    )
+
+
+def _compose_sections(f: Facts) -> dict[str, str]:
+    sections: dict[str, str] = {}
+    if f.profile.name == "exec":
+        sections["overall_rag"] = f"Overall delivery status is {f.rag}."
+        top = f.risks[:3]
         sections["top_risks"] = " ".join(top) if top else "No material risks reported."
         sections["ask"] = "Decision needed: none this period."
-        claims += [Claim(r, [raid_id]) for r in top]
-    elif profile.name == "programme":
-        claims += _metric_claims(metrics, burndown_id)
-        sections["overall_rag"] = f"Delivery status {rag}."
-        sections["risks"] = " ".join(risks) if risks else "No risks logged."
-        sections["dependencies"] = " ".join(deps) if deps else "No external dependencies logged."
-        sections["milestones"] = _looking_ahead(arts, status_id)
-        claims += [Claim(r, [raid_id]) for r in risks]
-    else:  # team — most granular, no caps, all detail
-        claims += _metric_claims(metrics, burndown_id)
+    elif f.profile.name == "programme":
+        sections["overall_rag"] = f"Delivery status {f.rag}."
+        sections["risks"] = " ".join(f.risks) if f.risks else "No risks logged."
+        sections["dependencies"] = (
+            " ".join(f.deps) if f.deps else "No external dependencies logged."
+        )
+        sections["milestones"] = f.looking_ahead
+    else:  # team
+        m = f.metrics
         sections["sprint_metrics"] = (
-            f"Committed {int(metrics.committed)} points, "
-            f"completed {int(metrics.completed)} points, "
-            f"velocity {int(metrics.velocity)}, "
-            f"{int(metrics.carry_over)} stories carried over."
+            f"Committed {int(m.committed)} points, "
+            f"completed {int(m.completed)} points, "
+            f"velocity {int(m.velocity)}, "
+            f"{int(m.carry_over)} stories carried over."
         )
         sections["ticket_progress"] = (
             "Stories progressed across the sprint; carry-over items remain in flight."
         )
-        sections["blockers"] = " ".join(risks) if risks else "No blockers reported."
-        claims += [Claim(r, [raid_id]) for r in risks]
+        sections["blockers"] = " ".join(f.risks) if f.risks else "No blockers reported."
+    return sections
 
-    return Report(team=team, audience=audience, sections=sections, claims=claims)
+
+def compose(inputs: dict[str, Any]) -> Report:
+    """Deterministic, audience-tuned, fully-cited report writer (the SS-1.5 subject)."""
+    f = _grounded_facts(inputs)
+    if f.insufficient:
+        return Report(team=f.team, audience=f.audience, insufficient_evidence=True)
+    return Report(team=f.team, audience=f.audience, sections=_compose_sections(f), claims=f.claims)
