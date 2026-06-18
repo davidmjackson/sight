@@ -1,5 +1,9 @@
+import os
+
+import pytest
+
 from sprintsight.evals.report import run_report_eval
-from sprintsight.report.llm_writer import make_llm_writer
+from sprintsight.report.llm_writer import _anthropic_completer, make_llm_writer
 
 
 def _good_fake(system, user, schema):
@@ -50,3 +54,20 @@ def test_thin_data_skips_the_llm():
                   "artifacts": artifacts_for("Echo", [15])})
     assert rep.insufficient_evidence is True
     assert calls == []  # LLM never called on thin data
+
+
+def test_anthropic_completer_constructs_without_calling_api():
+    # Building the completer must not require a network call.
+    completer = _anthropic_completer("claude-sonnet-4-6")
+    assert callable(completer)
+
+
+@pytest.mark.skipif(
+    not os.getenv("ANTHROPIC_API_KEY", "").startswith("sk-ant-")
+    or len(os.getenv("ANTHROPIC_API_KEY", "")) < 50,
+    reason="no real Anthropic key wired",
+)
+def test_live_llm_writer_greens_the_suite():
+    from sprintsight.evals.report import run_report_eval
+    report = run_report_eval(make_llm_writer())
+    assert report.pass_rate == 1.0, report.summary()

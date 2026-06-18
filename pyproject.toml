@@ -9,6 +9,7 @@ description = "AI delivery-intelligence layer: audience-tuned cited status repor
 requires-python = ">=3.11"
 dependencies = [
   "pyyaml>=6",
+  "anthropic>=0.40",
 ]
 
 # App dependencies (FastAPI, Anthropic SDK, pgvector client, etc.) land in later Stage-1 stories.

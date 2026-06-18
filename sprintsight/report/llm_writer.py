@@ -116,5 +116,34 @@ def make_llm_writer(complete: Completer | None = None, model: str = DEFAULT_MODE
     return write
 
 
-def _anthropic_completer(model: str) -> Completer:  # real client; built in Task 3
-    raise NotImplementedError("Anthropic completer is wired in Task 3")
+def _anthropic_completer(model: str) -> Completer:
+    """Real completer: Anthropic Messages API with tool-use structured output.
+
+    NOTE: ZDR (zero data retention) is an account/org-level configuration, not a
+    per-request header. No extra_headers are needed here; enable ZDR in the Anthropic
+    console for your organisation if required.
+    """
+
+    def complete(system: str, user: str, schema: dict[str, Any]) -> dict[str, str]:
+        import anthropic  # lazy: only needed on the live path
+
+        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+        tool = {
+            "name": "emit_report",
+            "description": "Return the report sections.",
+            "input_schema": schema,
+        }
+        msg = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            system=system,
+            tools=[tool],
+            tool_choice={"type": "tool", "name": "emit_report"},
+            messages=[{"role": "user", "content": user}],
+        )
+        for block in msg.content:
+            if block.type == "tool_use" and block.name == "emit_report":
+                return block.input  # {"sections": {...}}
+        return {}
+
+    return complete
