@@ -19,7 +19,7 @@ from sprintsight.report.writer import (
     _grounded_facts,
 )
 
-DEFAULT_MODEL = "claude-sonnet-4-6"  # confirm exact id via the claude-api skill (Task 3)
+DEFAULT_MODEL = "claude-sonnet-4-6"  # confirmed via claude-api skill; verified live 2026-06-18
 
 # (system_prompt, user_prompt, output_schema) -> {section_key: prose}
 Completer = Callable[[str, str, dict[str, Any]], dict[str, str]]

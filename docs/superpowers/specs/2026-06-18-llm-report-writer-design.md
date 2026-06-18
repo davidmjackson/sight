@@ -116,14 +116,17 @@ audience shaping; LLM prose only improves wording within those bounds.
 
 ### Component 4 — Anthropic client (the default completer)
 
-- Anthropic Messages API with **structured output** (tool-use / JSON schema), **ZDR** on the
-  request, API key read from `.env` (`ANTHROPIC_API_KEY`).
-- Exact model id, SDK call shape, and structured-output mechanism **confirmed against the
-  `claude-api` skill at implementation time** (do not hardcode from memory). Design default:
-  Sonnet 4.6 for cost/quality; `model` is a factory argument so it is configurable.
+- Anthropic Messages API with **structured output** (tool-use / JSON schema), API key read from
+  the environment (`ANTHROPIC_API_KEY`). **ZDR is account/org-level configuration in the Anthropic
+  Console, NOT a per-request header** (confirmed against the `claude-api` skill during
+  implementation — the earlier `extra_headers={"anthropic-beta": "zdr"}` sketch was wrong and is
+  not used); enable ZDR for the org to satisfy the locked "ZDR on Anthropic API" decision.
+- Model id `claude-sonnet-4-6` and the tool-use call shape were confirmed against the `claude-api`
+  skill at implementation time. Sonnet 4.6 is the default for cost/quality; `model` is a factory
+  argument so it is configurable.
 - No persistence; no logging of artifact bodies beyond the in-process call. Single external-call
-  decision to flag per security-first: outbound to the Anthropic API on synthetic data, ZDR on —
-  consistent with the locked "ZDR on Anthropic API" decision.
+  decision flagged per security-first: outbound to the Anthropic API on synthetic data, ZDR
+  enabled at the org level — consistent with the locked "ZDR on Anthropic API" decision.
 
 ## Data flow
 
