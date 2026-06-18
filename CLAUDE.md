@@ -9,6 +9,23 @@ this file is self-sufficient (Claude Code does not see the planning thread's Pro
 2. This file — how to build and how to drive the board.
 3. The spec for the Story you are working (under docs/).
 
+## Communicating with David (read this)
+David is the product owner and is learning the AI-engineering concepts as we build. His
+background is Agile delivery management, not senior engineering. He has been clear that
+dense, senior-level write-ups leave him approving work he cannot follow, and we are
+deliberately fixing that. Apply it here too:
+- Explain before asking for a decision. Plain English first, one analogy, then the choice.
+  Define every acronym on first use.
+- Aim for understanding, not sign-off. He should be able to say a choice back in his own
+  words. If a doc cannot be skim-read by a non-engineer, put a plain-English summary at the top.
+- No em dashes in anything he reads (use commas, periods, or parentheses). Short paragraphs,
+  tight bullets, lead with the verdict, end with clear next actions.
+- Keep the learning log current: LEARNING-LOG.md (repo root) is a plain-English record of the
+  concepts behind the build. When a Story introduces a genuinely NEW concept, add a short entry
+  (what it is, an analogy, where it shows up in Sprintsight). Do not let it sprawl; one concept
+  per entry. This is build context, not a chore: it is how the product owner stays able to
+  defend the work.
+
 ## What Sprintsight is (one line)
 An AI delivery-intelligence layer that reads across delivery tools and produces audience-tuned,
 fully-cited status reports, risk detection, and a watermelon detector (reported-green / actually-red).
