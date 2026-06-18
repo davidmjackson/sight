@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-18 (Claude Code session: STAGE 2 arc 1 — Status Report Agent — DONE: SS-25/26/27, report eval GREEN (4/4) and gating CI. Prior: STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-18 (Claude Code session: STAGE 2 arc 2 — LLM-backed report-writer — DONE and merged to main (374bf6c), CI green. The real Anthropic-backed report-writer node (ADR-0001) now runs behind the same `ReportWriter` seam; verified live (`--llm` eval 4/4 against the real API) with all sections genuinely LLM-authored and audience-distinct. `compose` stays the deterministic CI gate/fallback. Prior: STAGE 2 arc 1 — DONE: SS-25/26/27, report eval GREEN (4/4) and gating CI. STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -11,12 +11,26 @@ Last updated: 2026-06-18 (Claude Code session: STAGE 2 arc 1 — Status Report A
 
 ## Where we are
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
-Stage 2 (Status Report Agent, Epic SS-1) — first arc DONE: the SS-1.5 report-quality eval is
-GREEN (4/4 cases: boreas-exec, atlas-programme, echo-thin, audience-triple; all dimensions pass).
-The Echo thin-data team was added to the corpus (now 37 artifacts). A deterministic report composer
-(`compose` behind the `ReportWriter` seam in sprintsight/report/writer.py) produces audience-tuned,
-cited reports and passes the fabrication trap; the LLM-backed writer remains a deferred drop-in
-(open-wiring). The report eval (`scripts/run_report_eval.py`) now gates the `lint-and-test` CI job.
+Stage 2 (Status Report Agent, Epic SS-1) — BOTH ARCS DONE.
+- Arc 1: the SS-1.5 report-quality eval is GREEN (4/4 cases: boreas-exec, atlas-programme,
+  echo-thin, audience-triple; all dimensions pass). Echo thin-data team in the corpus (37 artifacts).
+  Deterministic `compose` (behind the `ReportWriter` seam, sprintsight/report/writer.py) produces
+  audience-tuned, cited reports and passes the fabrication trap. The report eval
+  (`scripts/run_report_eval.py`) gates the `lint-and-test` CI job.
+- Arc 2: LLM-backed report-writer (ADR-0001's report-writer node) is BUILT and merged (374bf6c).
+  HYBRID design — the deterministic core (`_grounded_facts` + `_compose_sections`, refactored out
+  of `compose`) owns all numbers/RAG/cited `claims`; the injected LLM completer authors only the
+  section PROSE; a validator falls violating/over-cap sections back to `compose` prose. So the
+  eval's grounding/citation/fabrication assertions hold BY CONSTRUCTION (LLM output can never reach
+  `claims`). Code: sprintsight/report/llm_writer.py (`make_llm_writer(complete=None, model=...)`,
+  default model claude-sonnet-4-6). `compose` stays the CI gate/fallback; the LLM path is offline-
+  tested with a fake completer and runs live under `scripts/run_report_eval.py --llm` (key-gated,
+  CI never calls the API). Verified live 2026-06-18: `--llm` eval 4/4, prose genuinely LLM-authored
+  + audience-distinct, grounded. Final opus whole-branch review = Ready to merge, no Critical/Important.
+  Deferred follow-ups (next arc, all latent/cosmetic): strengthen fallback tests to pin the
+  mechanism; log on the writer's `except`; handle completer `max_tokens` truncation; Facts keyword-
+  arg construction; direct programme/team section-key tests; optional `.env` autoload in the eval
+  script. See .git/sdd/progress.md (arc-2 section) + docs/superpowers/{specs,plans}/2026-06-18-*.
 
 Stage 1 recap (7/7): SS-19 corpus, SS-21 harness (+Langfuse), SS-18 watermelon eval, SS-20
 migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. Watermelon eval GREEN
@@ -24,14 +38,20 @@ migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. Watermelo
 db/migrations/, data/ corpus. CI: lint-and-test (ruff + pytest + report eval) and `db` job
 (migrate + ingest + retrieve on pgvector:pg16) — both green on push.
 
-Next in Stage 2: build the LLM-backed report-writer agent (the actual report-writer node per
-ADR-0001) to replace the deterministic composer seam, then audience-tuning and grounding/
-fabrication gates. Wire the Anthropic API key (.env) before starting the LLM report-writer.
+Next in Stage 2 (optional, eval-first): extend eval cases the LLM now warrants — LLM-as-judge
+readability/tone (pulls a slice of Stage 4 forward), stricter audience differentiation, RAID
+cite-through, or surface a moat behaviour (e.g. B1 cross-team dependency slip) in the narrative
+with an eval asserting it. Otherwise Stage 3 (LangGraph: wire retrieval + risk + report-writer
+as the three nodes per ADR-0001).
+
+Anthropic API key: a real sk-ant key is now wired in .env (len 108). NOTE the project has NO
+.env auto-loader (no load_dotenv) — live `--llm` runs must export ANTHROPIC_API_KEY into the env
+(a minimal loader already exists at scripts/verify_langfuse.py if we want to share it).
 
 Still-open real-wiring items (not blocking, all flagged on tickets): provision a persistent Supabase
 Postgres+pgvector (only CI's ephemeral DB used so far); finalise the in-region 1024-dim embedding
-model (D1) to replace HashingEmbedder; populate artifact.team_id for DB-side team scoping. These
-become load-bearing when the system runs outside CI / on the real embedding model.
+model (D1) to replace HashingEmbedder; populate artifact.team_id for DB-side team scoping; add a
+.env loader for non-CI runs. These become load-bearing when the system runs outside CI.
 
 ## Tracking setup (done)
 - Jira project: key SS, name SprintSight, team-managed (next-gen).
