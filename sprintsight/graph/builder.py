@@ -13,6 +13,7 @@ from collections.abc import Callable
 from functools import partial
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from sprintsight.evals.fixtures import Artifact
 from sprintsight.evals.watermelon import Verdict
@@ -38,7 +39,7 @@ def build_graph(
     writer: ReportWriter = compose,
     make_retriever: RetrieverFactory = default_make_retriever,
     k: int = 5,
-):
+) -> CompiledStateGraph:
     """Compile the linear three-node graph with the writer/retriever injected."""
     g = StateGraph(GraphState)
     g.add_node("retrieval", partial(retrieval_node, make_retriever=make_retriever, k=k))
@@ -60,6 +61,7 @@ def run(
 ) -> GraphState:
     """Invoke the graph for one {team, [audience], artifacts} input -> final state."""
     graph = build_graph(writer=writer, make_retriever=make_retriever, k=k)
+    # nodes fill retrieved/verdict/report; GraphState is total=False so a partial init is valid.
     init: GraphState = {
         "team": inputs["team"],
         "audience": inputs.get("audience", DEFAULT_AUDIENCE),
