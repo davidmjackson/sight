@@ -11,16 +11,22 @@ Last updated: 2026-06-17 (Claude Code session: STAGE 0 + STAGE 1 BOTH CLOSED. St
 
 ## Where we are
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
-Stage 1 (7/7): SS-19 synthetic corpus, SS-21 eval harness (+Langfuse), SS-18 watermelon eval,
-SS-20 schema migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. End-to-end the
-watermelon eval is GREEN at the showcase bar (4/4 classification, 4/4 evidence) and the eval-first
-chain held throughout (eval landed red, detector turned it green). Code: sprintsight/{evals,ingest,
-retrieval,detector.py}, db/migrations/, data/ corpus. CI has two jobs: lint-and-test (ruff + 23
-tests) and `db` (migrate + ingest + retrieve on pgvector:pg16) — both green on push.
+Stage 2 (Status Report Agent, Epic SS-1) — first arc DONE: the SS-1.5 report-quality eval is
+GREEN (4/4 cases: boreas-exec, atlas-programme, echo-thin, audience-triple; all dimensions pass).
+The Echo thin-data team was added to the corpus (now 37 artifacts). A deterministic report composer
+(`compose` behind the `ReportWriter` seam in sprintsight/evals/report.py) produces audience-tuned,
+cited reports and passes the fabrication trap; the LLM-backed writer remains a deferred drop-in
+(open-wiring). The report eval (`scripts/run_report_eval.py`) now gates the `lint-and-test` CI job.
 
-Next is Stage 2 (Status Report Agent, Epic SS-1). Per eval-first, its opener is implementing the
-SS-1.5 report-quality eval (docs/evals/report-quality-eval.md) on the existing harness, then the
-report agent that turns it green. Create the Stage-2 Stories under SS-1 before building.
+Stage 1 recap (7/7): SS-19 corpus, SS-21 harness (+Langfuse), SS-18 watermelon eval, SS-20
+migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. Watermelon eval GREEN
+(4/4 classification, 4/4 evidence). Code: sprintsight/{evals,ingest,retrieval,detector.py},
+db/migrations/, data/ corpus. CI: lint-and-test (ruff + pytest + report eval) and `db` job
+(migrate + ingest + retrieve on pgvector:pg16) — both green on push.
+
+Next in Stage 2: build the LLM-backed report-writer agent (the actual report-writer node per
+ADR-0001) to replace the deterministic composer seam, then audience-tuning and grounding/
+fabrication gates. Wire the Anthropic API key (.env) before starting the LLM report-writer.
 
 Still-open real-wiring items (not blocking, all flagged on tickets): provision a persistent Supabase
 Postgres+pgvector (only CI's ephemeral DB used so far); finalise the in-region 1024-dim embedding
@@ -103,11 +109,13 @@ Eval-first order held throughout; full story map in docs/jira/stage-1-stories.md
 6. SS-2.6 (SS-23) retrieval — sprintsight/retrieval/ (InMemoryRetriever + PostgresRetriever pgvector <=>).
 7. SS-2.7 (SS-22) baseline detector — sprintsight/detector.py; deterministic, recommend-only; turned the watermelon eval GREEN (4/4 + 4/4). scripts/run_watermelon_eval.py exits 0.
 
-## First actions in the new thread (Stage 2, Epic SS-1 — Status Report Agent)
-Eval-first, same pattern as Stage 1:
-1. Create the Stage-2 Stories under Epic SS-1 (do not set status on create). Likely first: implement the SS-1.5 report-quality eval; then the report-writer agent; then audience-tuning + grounding/fabrication gates.
-2. Implement the SS-1.5 report eval (docs/evals/report-quality-eval.md) on the existing harness (sprintsight/evals/) using the corpus fixtures + the thin-data fabrication trap. It should land RED until the report agent exists.
-3. Build the report agent (the report-writer node, ADR-0001) to turn that eval green: audience-tuned (exec/programme/team), every claim cited, refuses to fabricate on thin data.
+## Next actions (Stage 2, Epic SS-1 — Status Report Agent, first arc complete)
+Report-quality eval arc is DONE (eval GREEN, gates CI). Next arc: LLM report-writer.
+1. Wire the Anthropic API key (.env) — needed for the real report-writer LLM calls.
+2. Build the LLM-backed report-writer (the report-writer node per ADR-0001) behind the
+   `ReportWriter` seam; keep the deterministic `compose` as fallback / test fixture.
+3. Extend eval cases as Stage 2 Stories warrant (audience-tuning, grounding gates, RAID
+   cite-through, cross-team dependency signal).
 
 ## Open real-wiring items (not blocking the build; all flagged on tickets)
 - Provision a persistent Supabase Postgres+pgvector (only CI's ephemeral DB used so far).
@@ -116,5 +124,7 @@ Eval-first, same pattern as Stage 1:
 - Stage 2+ will need the Anthropic API key wired (.env) for the actual report-writer LLM calls.
 
 ## Eval-first guardrail (still governs)
-No feature code before the eval it must pass exists. The report agent (Stage 2) comes AFTER the SS-1.5 eval is implemented and red.
-Out of Stage-1 scope by decision: SS-1.5 report eval opens Stage 2 (Epic SS-1); portfolio/watermelon UI is Stage 6 (SS-6). Optional housekeeping: bump CI action versions (Node 20 deprecation warning).
+No feature code before the eval it must pass exists. SS-1.5 report eval is now GREEN and gating CI.
+The LLM report-writer is next; any new Stage-2 behaviour requires an eval case first.
+Out of Stage-2 scope by decision: portfolio/watermelon UI is Stage 6 (SS-6). Optional housekeeping:
+bump CI action versions (Node 20 deprecation warning).

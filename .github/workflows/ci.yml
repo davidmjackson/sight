@@ -25,6 +25,9 @@ jobs:
       - name: Test (pytest)
         run: pytest
 
+      - name: Report-quality eval (SS-1.5) must be green
+        run: python scripts/run_report_eval.py
+
   db:
     runs-on: ubuntu-latest
     services:
