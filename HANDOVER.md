@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-17 (Claude Code session: STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-18 (Claude Code session: STAGE 2 arc 1 — Status Report Agent — DONE: SS-25/26/27, report eval GREEN (4/4) and gating CI. Prior: STAGE 0 + STAGE 1 BOTH CLOSED. Stage 0 = 9/9 Foundation Stories. Stage 1 (Epic SS-2, Ingestion + RAG Core) = 7/7 Stories Done: corpus, eval harness, watermelon eval, migrations, ingestion, retrieval, detector. The watermelon eval is GREEN (4/4 classification + 4/4 evidence). Repo on github.com/davidmjackson/sight; CI green incl. a `db` job that applies the migration + ingests + retrieves on pgvector:pg16. Langfuse Cloud EU provisioned. System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -14,7 +14,7 @@ Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) ar
 Stage 2 (Status Report Agent, Epic SS-1) — first arc DONE: the SS-1.5 report-quality eval is
 GREEN (4/4 cases: boreas-exec, atlas-programme, echo-thin, audience-triple; all dimensions pass).
 The Echo thin-data team was added to the corpus (now 37 artifacts). A deterministic report composer
-(`compose` behind the `ReportWriter` seam in sprintsight/evals/report.py) produces audience-tuned,
+(`compose` behind the `ReportWriter` seam in sprintsight/report/writer.py) produces audience-tuned,
 cited reports and passes the fabrication trap; the LLM-backed writer remains a deferred drop-in
 (open-wiring). The report eval (`scripts/run_report_eval.py`) now gates the `lint-and-test` CI job.
 
