@@ -71,14 +71,14 @@ jobs:
           out=$(python scripts/ingest.py)
           echo "$out"
           echo "$out" | grep -q '"ingested": 0' || { echo "NOT IDEMPOTENT"; exit 1; }
-          echo "$out" | grep -q '"skipped": 36' || { echo "EXPECTED 36 SKIPPED"; exit 1; }
+          echo "$out" | grep -q '"skipped": 37' || { echo "EXPECTED 37 SKIPPED"; exit 1; }
 
-      - name: Verify rows (36 artifacts, chunks embedded)
+      - name: Verify rows (37 artifacts, chunks embedded)
         run: |
           psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -c "do \$\$
           begin
-            if (select count(*) from artifact) <> 36 then
-              raise exception 'expected 36 artifacts, got %', (select count(*) from artifact);
+            if (select count(*) from artifact) <> 37 then
+              raise exception 'expected 37 artifacts, got %', (select count(*) from artifact);
             end if;
             if (select count(*) from chunk) = 0 then
               raise exception 'no chunks written';

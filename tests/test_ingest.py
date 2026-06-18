@@ -30,16 +30,16 @@ def test_ingest_corpus_is_idempotent():
     emb = HashingEmbedder()
 
     first = ingest_corpus(store, emb)
-    assert first.artifacts_total == 36
-    assert first.ingested == 36
+    assert first.artifacts_total == 37
+    assert first.ingested == 37
     assert first.skipped == 0
-    assert first.chunks_written >= 36
+    assert first.chunks_written >= 37
     counts_after_first = store.counts()
-    assert counts_after_first["artifact"] == 36
+    assert counts_after_first["artifact"] == 37
 
     # Re-running over the same store changes nothing (content_hash match).
     second = ingest_corpus(store, emb)
     assert second.ingested == 0
-    assert second.skipped == 36
+    assert second.skipped == 37
     assert second.chunks_written == 0
     assert store.counts() == counts_after_first  # no new rows

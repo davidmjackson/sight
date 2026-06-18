@@ -11,7 +11,7 @@ def test_ground_truth_shape():
     gt = load_ground_truth()
     assert set(gt["sprints"]) == {"14", "15"}
     records = gt["records"]
-    assert len(records) == 8  # 4 teams x 2 sprints
+    assert len(records) == 9  # 4 teams x 2 sprints + Echo s15 (thin-data trap)
 
     atlas_s15 = next(r for r in records if r["team"] == "Atlas" and r["sprint"] == 15)
     assert atlas_s15["is_watermelon"] is True
@@ -21,7 +21,7 @@ def test_ground_truth_shape():
 
 def test_corpus_complete():
     corpus = load_corpus()
-    assert len(corpus) == 36
+    assert len(corpus) == 37
 
 
 def test_every_expected_evidence_resolves():
@@ -38,3 +38,12 @@ def test_risk_in_chat_not_raid_gap():
     assert "DRACO-412" in corpus["slack-atlas-s15-msg-dep"].body
     assert "DRACO-412" not in corpus["raid-atlas-s15"].body
     assert "DRACO-412" not in corpus["status-atlas-s15"].body
+
+
+def test_echo_is_thin():
+    # The fabrication trap: Echo has only a one-line status, no burndown/RAID/chat.
+    corpus = load_corpus()
+    echo = [aid for aid in corpus if aid.endswith("echo-s15")]
+    assert echo == ["status-echo-s15"]
+    body = corpus["status-echo-s15"].body
+    assert "Committed" not in body and "Velocity" not in body

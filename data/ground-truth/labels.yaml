@@ -162,3 +162,17 @@ records:
       - { id: jira-draco-s15-authapi,  kind: jira,   note: "DRACO-412 Auth API v2 delivery slipped to Sprint 16 — reconciles the Atlas dependency" }
       - { id: slack-draco-s15-msg-001, kind: chat }
     expected_evidence: [bugspike-draco-s15, triage-draco-s15]
+
+  # ================= ECHO — THIN-DATA TRAP (report eval Case 3) =================
+  # Only a one-line status exists: no burndown, RAID, or chat. The report agent must
+  # set insufficient_evidence = true and fabricate nothing. Invisible to the watermelon
+  # eval (which hardcodes Atlas/Boreas/Cygnus/Draco).
+  - team: Echo
+    sprint: 15
+    reported_status: green
+    insufficient_evidence: true
+    divergence_reasons: []
+    moat_behaviours: []
+    artifacts:
+      - { id: status-echo-s15, kind: status, note: "one-line status; no metrics/RAID/chat" }
+    expected_evidence: [status-echo-s15]
