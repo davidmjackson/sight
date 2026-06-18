@@ -42,7 +42,7 @@
 
 Deliverable: the SS-1.5 report eval is wired to the corpus and bites; with the null writer the suite is RED, and a committed test asserts that RED state (so CI stays green). No composer yet.
 
-### Task A1: Add the Echo thin-data team to the corpus
+### Task 1: Add the Echo thin-data team to the corpus
 
 **Files:**
 - Create: `data/corpus/echo/status-echo-s15.md`
@@ -177,7 +177,7 @@ git add data/corpus/echo/status-echo-s15.md data/ground-truth/labels.yaml tests/
 git commit -m "SS-2.A: add Echo thin-data team (report eval Case 3); bump corpus count 36->37"
 ```
 
-### Task A2: Report contract + audience profiles
+### Task 2: Report contract + audience profiles
 
 **Files:**
 - Create: `sprintsight/report/__init__.py` (empty)
@@ -340,7 +340,7 @@ git add sprintsight/report/__init__.py sprintsight/report/contract.py sprintsigh
 git commit -m "SS-2.A: report contract + locked audience profiles"
 ```
 
-### Task A3: Report eval suite + null writer (lands RED)
+### Task 3: Report eval suite + null writer (lands RED)
 
 **Files:**
 - Create: `sprintsight/report/writer.py` (null writer only for now)
@@ -642,7 +642,7 @@ git commit -m "SS-2.A: report-quality eval (SS-1.5) on the harness — RED with 
 
 Deliverable: `compose` produces cited, grounded, audience-shaped reports so the `citation_coverage`, `citation_validity`, `grounding`, and `required_sections` dimensions pass for boreas-exec and atlas-programme. (`audience_fit` length/forbidden-marker tightening and the fabrication/differentiation gates are Story C.)
 
-### Task B1: Metric, RAG, and risk/dependency extraction helpers
+### Task 4: Metric, RAG, and risk/dependency extraction helpers
 
 **Files:**
 - Modify: `sprintsight/report/writer.py`
@@ -759,7 +759,7 @@ git add sprintsight/report/writer.py tests/test_report_writer.py
 git commit -m "SS-2.B: metric/RAG/risk/dependency extraction helpers (reuse detector parsers)"
 ```
 
-### Task B2: The `compose` writer — cited, grounded, sectioned reports
+### Task 5: The `compose` writer — cited, grounded, sectioned reports
 
 **Files:**
 - Modify: `sprintsight/report/writer.py`
@@ -889,7 +889,7 @@ git commit -m "SS-2.B: deterministic compose writer — citation coverage/validi
 
 Deliverable: every dimension passes — `audience_fit` (length caps + forbidden markers), `no_fabrication` (Echo), and `audience_differentiation` — so `run_report_eval(compose).pass_rate == 1.0`. The script becomes a CI gate.
 
-### Task C1: Audience-fit + fabrication + differentiation green
+### Task 6: Audience-fit + fabrication + differentiation green
 
 **Files:**
 - Modify: `tests/test_report_eval.py`
@@ -947,7 +947,7 @@ git add sprintsight/report/writer.py tests/test_report_eval.py
 git commit -m "SS-2.C: audience fit + fabrication gate + differentiation — report eval fully GREEN"
 ```
 
-### Task C2: Wire the report eval into CI + update state docs
+### Task 7: Wire the report eval into CI + update state docs
 
 **Files:**
 - Modify: `.github/workflows/ci.yml` (add a gate step to `lint-and-test`)
@@ -992,8 +992,8 @@ Expected: latest run for the push is `completed`/`success` on both `lint-and-tes
 ## Self-Review (completed during planning)
 
 **Spec coverage** (docs/evals/report-quality-eval.md):
-- §2 contract → Task A2 (`Report`/`Claim`). §3 assertions A–F → `sprintsight/evals/report.py` (`_coverage`/`_validity`/`_grounding`/`_required_sections`/`_audience_fit`/`_no_fabrication`), Tasks A3–C1.
-- §4 audience profiles → Task A2 (`PROFILES`). §5 cases 1–4 → `build_cases` + `_audience_triple` (A3); composer behaviour B2/C1. §6 hard gate (Case 3) → `_no_fabrication` + thin-data guard (B2). §7 scoring → reused harness `summary()`/`dimension_rates()`. §10 pass bar → `test_compose_greens_the_whole_suite`.
+- §2 contract → Task 2 (`Report`/`Claim`). §3 assertions A–F → `sprintsight/evals/report.py` (`_coverage`/`_validity`/`_grounding`/`_required_sections`/`_audience_fit`/`_no_fabrication`), Tasks A3–C1.
+- §4 audience profiles → Task 2 (`PROFILES`). §5 cases 1–4 → `build_cases` + `_audience_triple` (A3); composer behaviour B2/C1. §6 hard gate (Case 3) → `_no_fabrication` + thin-data guard (B2). §7 scoring → reused harness `summary()`/`dimension_rates()`. §10 pass bar → `test_compose_greens_the_whole_suite`.
 
 **Scope note (deliberate, consistent with ADR-0001):** the composer represents *structured* artifacts (status/burndown/RAID). Surfacing the chat-only Draco dependency into Atlas's report is the **risk/reconciliation node's** job (Stage 3), not the report writer — so it is out of scope here. Case 2's assertions (A,B,C,D-programme,E) are satisfied without it; the dependencies section is sourced from the RAID. This matches design-doc §10 (LangGraph/risk-node wiring deferred).
 
