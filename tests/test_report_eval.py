@@ -26,3 +26,20 @@ def test_compose_greens_citation_and_grounding():
     assert dims["grounding"][0] == dims["grounding"][1]
     # Required sections present for both audience cases.
     assert dims["required_sections"] == (2, 2)
+
+
+def test_compose_greens_the_whole_suite():
+    report = run_report_eval(compose)
+    assert report.pass_rate == 1.0, report.summary()
+    dims = report.dimension_rates()
+    assert dims["audience_fit"] == (2, 2)
+    assert dims["no_fabrication"] == (1, 1)
+    assert dims["audience_differentiation"] == (1, 1)
+
+
+def test_echo_triggers_insufficient_evidence():
+    from sprintsight.evals.fixtures import artifacts_for
+    rep = compose({"team": "Echo", "audience": "exec",
+                   "artifacts": artifacts_for("Echo", [15])})
+    assert rep.insufficient_evidence is True
+    assert rep.claims == []

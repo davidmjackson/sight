@@ -10,10 +10,11 @@ import json
 import sys
 
 from sprintsight.evals.report import run_report_eval
+from sprintsight.report.writer import compose
 
 
 def main() -> int:
-    report = run_report_eval()  # default null writer until Story B wires `compose`
+    report = run_report_eval(compose)
     print(json.dumps(report.summary(), indent=2))
     print("\nPer-case:")
     for r in report.results:
