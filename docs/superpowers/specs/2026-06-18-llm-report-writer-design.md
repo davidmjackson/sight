@@ -95,7 +95,10 @@ Validation is two-tier, because the eval measures the word cap on the **whole re
 **Per-section marker checks** — for each required section key, fall back to `compose`'s prose
 for that key if the LLM prose:
 
-- contains a `TICKET_ID` match when `forbid_ticket_ids`, or
+- contains a `TICKET_ID` match — **unconditionally, for every audience** (anti-fabrication guard:
+  the LLM is never given any ticket id in its facts, so a ticket id appearing in LLM prose is
+  always fabricated; this is stricter than the per-profile `forbid_ticket_ids` flag, which still
+  governs the eval's audience-fit scoring), or
 - contains a `MECHANICS_TERMS` term when `forbid_mechanics`, or
 - is missing / empty.
 
