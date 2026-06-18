@@ -15,6 +15,7 @@ import os
 import sys
 
 from sprintsight.evals.report import run_report_eval
+from sprintsight.graph.builder import graph_writer
 from sprintsight.report.llm_writer import make_llm_writer
 from sprintsight.report.writer import compose
 
@@ -25,8 +26,8 @@ def _select_writer() -> object:
         if not key.startswith("sk-ant-") or len(key) < 50:
             print("ERROR: --llm needs a real ANTHROPIC_API_KEY in the environment.")
             sys.exit(2)
-        return make_llm_writer()
-    return compose
+        return graph_writer(make_llm_writer())
+    return graph_writer(compose)
 
 
 def main() -> int:
