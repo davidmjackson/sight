@@ -819,9 +819,9 @@ def compose(inputs: dict[str, Any]) -> Report:
     arts: dict[str, Artifact] = inputs["artifacts"]
     profile = PROFILES[audience]
     t = team.lower()
-    burndown_id = f"burndown-{t}-s{15}"
-    status_id = f"status-{t}-s{15}"
-    raid_id = f"raid-{t}-s{15}"
+    burndown_id = f"burndown-{t}-s15"
+    status_id = f"status-{t}-s15"
+    raid_id = f"raid-{t}-s15"
 
     # Thin-data guard (fabrication gate): no burndown -> nothing to substantiate.
     if burndown_id not in arts:
