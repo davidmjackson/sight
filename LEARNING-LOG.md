@@ -11,7 +11,7 @@
 
 ---
 
-## Entry 1 — 2026-06-18 — The big picture
+## Entry 1 (2026-06-18): The big picture
 
 ### What Sprintsight actually is (plain version)
 Sprintsight is software that reads all the places your delivery information already lives (Jira, Confluence, Slack, RAID logs), works out what is really going on, and writes the status report for you, tuned for whoever is reading it (team, programme, or exec). It shows where every fact came from, and it flags teams that report green when the underlying data says they are not (a "watermelon": green outside, red inside).
@@ -72,6 +72,29 @@ The "find the info" specialist now genuinely runs and gathers relevant material.
 
 ### Where it shows up
 The new `sprintsight/graph/` folder is the joined-up pipeline. The whole stage was "orchestration only": joining what already worked, not adding new behaviour.
+
+---
+
+## Entry 3 (2026-06-18): Evals, in depth
+
+**Your definition (the one to keep):** Evals are a set of tests with answers we know to be true. We score the output against these tests for accuracy before we ship any feature.
+
+That is correct. Everything below is just the why and the how.
+
+**The three ingredients**
+- **Cases:** a fixed set of test inputs.
+- **Ground truth:** the answer we already know is correct for each case, decided by hand up front. Without it you cannot score anything, and the AI cannot mark its own work (it can be confidently wrong).
+- **A pass bar:** the score it must hit (for example 4 out of 4), or the build is blocked.
+
+**Who runs it, and when.** We run evals during the build, like automated tests in a pipeline. Not the model checking itself before every live reply. Pass the bar, then the feature ships.
+
+**Analogy.** A driving test with a fixed marking sheet. The examiner marks you against the sheet at test time. Pass, and you are licensed. You do not re-mark yourself at every junction afterwards.
+
+**You already know this idea.** Evals are acceptance criteria for AI output, run automatically. You never marked a story Done on "looks good"; you checked it against the ACs. Same move. And "eval-first" just means writing the test before the feature, so "correct" is defined before anyone builds, exactly like writing ACs before the dev starts.
+
+**In Sprintsight.** Two live evals gate the build: the watermelon eval (4 teams with known truth; must get both the label and the evidence right) and the report-quality eval. If either drops below its bar, the build stops.
+
+**Where else it applies.** Your Job Search duplicate matcher would want one too: a set of known duplicate pairs and known non-duplicate pairs, scored, to tune the threshold and control false positives instead of guessing.
 
 ---
 
