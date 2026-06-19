@@ -30,26 +30,36 @@ def _select_writer() -> object:
     return graph_writer(compose)
 
 
-def _run_judge_pass(writer) -> None:
-    """Advisory LLM-judge readability pass. Key-gated; never changes the exit code."""
+def _run_judge_pass(writer, n: int = 3) -> None:
+    """Advisory LLM-judge readability pass, sampled. Key-gated; never changes the exit code."""
     key = os.getenv("ANTHROPIC_API_KEY", "")
     if not key.startswith("sk-ant-") or len(key) < 50:
         print("\n[--judge] skipped: no real ANTHROPIC_API_KEY (advisory, CI-safe).")
         return
-    from sprintsight.evals.judge import make_judge
+    from sprintsight.evals.judge import DIMENSIONS, make_judge, sample_judge
     from sprintsight.evals.report import build_cases
 
     judge = make_judge()
-    print("\nReadability (advisory, LLM-judge):")
+    print(f"\nReadability (advisory, LLM-judge, median of {n}):")
     for case in build_cases():
         report = writer(case.inputs)
         if report is None or report.insufficient_evidence:
             print(f"  {case.name:16} n/a (insufficient evidence)")
             continue
-        score = judge(report, case.inputs.get("audience", "programme"))
-        flag = "PASS" if score.passes else "below-bar"
-        dims = ", ".join(f"{d}={score.scores[d]}" for d in score.scores)
-        print(f"  {case.name:16} {flag}  mean={score.mean:.1f}  [{dims}]")
+        audience = case.inputs.get("audience", "programme")
+        runs = [judge(report, audience) for _ in range(n)]
+        # Feed the already-collected runs to sample_judge so the median logic is shared and the
+        # API is not called again. `_q=list(runs)` snapshots the list per call so `runs` stays
+        # intact for the range calculation below.
+        median = sample_judge(lambda r, a, _q=list(runs): _q.pop(0), report, audience, n=len(runs))
+        flag = "PASS" if median.passes else "below-bar"
+        cells = []
+        for d in DIMENSIONS:
+            lo = min(r.scores[d] for r in runs)
+            hi = max(r.scores[d] for r in runs)
+            span = f"{median.scores[d]}" if lo == hi else f"{median.scores[d]} ({lo}-{hi})"
+            cells.append(f"{d}={span}")
+        print(f"  {case.name:16} {flag}  mean={median.mean:.2f}  [{', '.join(cells)}]")
 
 
 def main() -> int:
