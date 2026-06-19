@@ -188,3 +188,38 @@ bar or the data for David to decide on, not something to quietly game.
 Per CLAUDE.md, Claude Code does not write `LEARNING-LOG.md`. Append one line to the HANDOVER
 `Learning queue` for the planning thread to turn into an entry. Candidate concept: "De-noising an
 LLM judge by sampling and taking the median, and why a noisy judge cannot be a gate yet."
+
+## Result (2026-06-19)
+
+Both audiences cleared the advisory bar (every dimension >= 3 and mean >= 3.5), measured as the
+median of 3 live judge samples on the LLM writer:
+
+| Report | Compose baseline | LLM writer (before) | LLM writer (after) |
+|--------|------------------|---------------------|--------------------|
+| boreas-exec | 2.75 below-bar | 2.75 below-bar | **5.00 PASS** (5/5/5/5) |
+| atlas-programme | 2.25 below-bar | 3.00 below-bar (single-sample, pre-arc) | **4.00 PASS** (5/4/3/4) |
+
+The programme prose fix worked on the first measurement (it reached 4.75 once the prompt directives
+shipped). Exec did not, and the reason was a real bug, not prose quality: the LLM wrote "watch-points"
+(plural of our own "watch-point" directive), and the mechanics filter matched "points" as a substring,
+rejecting the section and falling back to terse compose every run. Two changes fixed it:
+
+1. A shared, boundary-aware `contains_mechanics()` in `audience.py` (used by both the writer validator
+   and the deterministic eval) that catches "38 points", "story points", and "velocity" but allows
+   compounds like "watch-points", "touchpoints", "checkpoints". This is the same principle as last
+   arc: we corrected a faulty mechanism, we did not soften the bar or invent facts.
+2. The tight word-limit instruction is now scoped to the small (exec) cap only, so the generous
+   programme cap keeps its narrative (an over-broad version had cut programme from 4.75 to 3.75).
+
+The deterministic gate stayed green throughout the change (89 passed/3 skipped, ruff clean, watermelon
+4/4, report 4/4), proving the looser matcher did not weaken the contract.
+
+Stability note: programme's `coherence` median sits at 3 (the per-dimension floor), so a noisy future
+run could dip it below bar. The judge remains advisory; this is one reason gate promotion stays
+deferred until the judge reads stably with margin on every dimension.
+
+Files actually touched (superset of the plan, due to the filter fix): the planned `judge.py`,
+`llm_writer.py`, `run_report_eval.py`, `tests/test_judge.py`, `tests/test_llm_writer.py`, plus
+`sprintsight/report/audience.py` (new `contains_mechanics`), `sprintsight/evals/report.py` (routed
+through it), and `tests/test_audience.py`. Note: `audience.py` gained a shared helper but its locked
+contract (profiles, section keys, caps, term list) is unchanged.
