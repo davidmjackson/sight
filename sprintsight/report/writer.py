@@ -173,22 +173,21 @@ def _exec_ask(f: Facts) -> str:
     Keys on whether risks are logged (a report can be reported green yet still carry
     risks). Addresses the exec reader (what to watch and whether to decide). It does NOT
     restate the risk text already shown in Top risks (the judge flagged that as circular),
-    and it invents no owner, date, or decision. Recommend-only prose; human-in-the-loop.
+    and it makes no ranking claim (the RAID rows have no severity field to sort on). It
+    invents no owner, date, or decision. Recommend-only prose; human-in-the-loop.
     """
     risks = f.risks[:3]
     if not risks:
-        return (
-            f"No decision needed from you this period; "
-            f"delivery is reported {f.rag} and on track."
-        )
+        tail = " and on track" if f.rag == "green" else ""
+        return f"No decision needed from you this period; delivery is reported {f.rag}{tail}."
     if len(risks) == 1:
         return (
             "No decision is needed from you this period; one risk is open (above). "
             "Escalate only if it slips before sprint close."
         )
     return (
-        f"No decision is needed from you this period; {len(risks)} risks are open (above), "
-        "the most exposed flagged first. Escalate only if it slips before sprint close."
+        f"No decision is needed from you this period; {len(risks)} risks are open (above). "
+        "Escalate if any slips before sprint close."
     )
 
 
