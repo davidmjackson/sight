@@ -74,16 +74,17 @@ def test_top_risks_render_each_risk_on_its_own_line():
     assert all(ln.startswith("- ") for ln in lines), "each risk is its own bullet"
 
 
-def test_exec_ask_points_to_a_logged_risk_when_risks_exist():
+def test_exec_ask_is_exec_directed_and_does_not_repeat_risk_text():
     from sprintsight.report.writer import _compose_sections, _grounded_facts
     f = _grounded_facts(
         {"team": "Boreas", "audience": "exec", "artifacts": artifacts_for("Boreas", [15])}
     )
     ask = _compose_sections(f)["ask"]
-    assert "Recommended next step" in ask
-    assert "Decision needed: none" not in ask          # the old dead end is gone
-    assert f.risks[0].rstrip(". ").strip() in ask        # names a real logged risk
-    assert "owned" in ask                                # forward-looking action
+    assert "from you" in ask                              # exec-directed, not team-directed
+    assert "Escalate" in ask                              # a grounded recommended focus
+    assert "Decision needed: none" not in ask            # the old dead end is gone
+    # not circular: the verbatim risk text is NOT restated in the ask (judge flagged this)
+    assert f.risks[0].rstrip(". ").strip() not in ask
 
 
 def test_exec_ask_with_no_risks_is_forward_but_needs_no_decision():
@@ -96,5 +97,5 @@ def test_exec_ask_with_no_risks_is_forward_but_needs_no_decision():
         claims=[], insufficient=False,
     )
     ask = _exec_ask(f)
-    assert "No decision needed this period" in ask
+    assert "No decision needed from you this period" in ask
     assert "on track" in ask

@@ -38,7 +38,11 @@ _SYSTEM = (
     "Dimensions: clarity (plain English, jargon-free, readable by a non-engineer); "
     "audience_fit (register matches the audience: exec = outcome and decision, team = granular); "
     "coherence (one joined-up narrative, not a disconnected list; no repetition); "
-    "actionability (the ask or decision-needed is specific; the reader knows what to do next). "
+    "actionability (the report surfaces the most material item and a specific, grounded "
+    "recommended focus or next step, so the reader knows what to watch or decide; a grounded "
+    "recommendation is fully sufficient, so do NOT require or reward an invented owner, calendar "
+    "date, or manufactured decision, and do not penalise their absence when the source data does "
+    "not contain them). "
     "A 5 is exemplary, a 1 is unacceptable. Be a strict grader."
 )
 

@@ -168,24 +168,27 @@ def _grounded_facts(inputs: dict[str, Any]) -> Facts:
 
 
 def _exec_ask(f: Facts) -> str:
-    """Grounded, forward-looking exec ask.
+    """Grounded, exec-directed forward note.
 
     Keys on whether risks are logged (a report can be reported green yet still carry
-    risks). Names only a risk already logged and recommends an owner be confirmed; it
-    invents no owner, date, or decision. Human-in-the-loop: this is recommend-only prose.
+    risks). Addresses the exec reader (what to watch and whether to decide). It does NOT
+    restate the risk text already shown in Top risks (the judge flagged that as circular),
+    and it invents no owner, date, or decision. Recommend-only prose; human-in-the-loop.
     """
     risks = f.risks[:3]
     if not risks:
-        return "No decision needed this period; delivery on track."
-    top = risks[0].rstrip(". ").strip()
+        return (
+            f"No decision needed from you this period; "
+            f"delivery is reported {f.rag} and on track."
+        )
     if len(risks) == 1:
         return (
-            f"Recommended next step: one risk logged ({top}); "
-            "confirm it is owned and tracked before sprint close."
+            "No decision is needed from you this period; one risk is open (above). "
+            "Escalate only if it slips before sprint close."
         )
     return (
-        f"Recommended next step: {len(risks)} risks logged (see above). "
-        f"The most exposed is {top}; confirm it is owned and tracked before sprint close."
+        f"No decision is needed from you this period; {len(risks)} risks are open (above), "
+        "the most exposed flagged first. Escalate only if it slips before sprint close."
     )
 
 
