@@ -97,6 +97,16 @@ def _looking_ahead(arts: dict[str, Artifact], status_id: str) -> str:
     return "Sprint 16 planning underway."
 
 
+def _as_list(items: list[str]) -> str:
+    """Render RAID-derived items as a clean markdown bullet list, one per line.
+
+    Replaces the old ' '.join(...) that ran separate risks together into one blob.
+    Each item gets a single trailing period (existing trailing periods/spaces are
+    normalised first).
+    """
+    return "\n".join(f"- {i.rstrip('. ').strip()}." for i in items)
+
+
 def _grounded_facts(inputs: dict[str, Any]) -> Facts:
     team: str = inputs["team"]
     audience: str = inputs["audience"]
@@ -162,13 +172,13 @@ def _compose_sections(f: Facts) -> dict[str, str]:
     if f.profile.name == "exec":
         sections["overall_rag"] = f"Overall delivery status is {f.rag}."
         top = f.risks[:3]
-        sections["top_risks"] = " ".join(top) if top else "No material risks reported."
+        sections["top_risks"] = _as_list(top) if top else "No material risks reported."
         sections["ask"] = "Decision needed: none this period."
     elif f.profile.name == "programme":
         sections["overall_rag"] = f"Delivery status {f.rag}."
-        sections["risks"] = " ".join(f.risks) if f.risks else "No risks logged."
+        sections["risks"] = _as_list(f.risks) if f.risks else "No risks logged."
         sections["dependencies"] = (
-            " ".join(f.deps) if f.deps else "No external dependencies logged."
+            _as_list(f.deps) if f.deps else "No external dependencies logged."
         )
         sections["milestones"] = f.looking_ahead
     else:  # team
@@ -182,7 +192,7 @@ def _compose_sections(f: Facts) -> dict[str, str]:
         sections["ticket_progress"] = (
             "Stories progressed across the sprint; carry-over items remain in flight."
         )
-        sections["blockers"] = " ".join(f.risks) if f.risks else "No blockers reported."
+        sections["blockers"] = _as_list(f.risks) if f.risks else "No blockers reported."
     return sections
 
 

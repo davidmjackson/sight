@@ -61,3 +61,14 @@ def test_dependency_lines_from_raid():
     arts = artifacts_for("Atlas", [15])
     deps = _dependency_lines(arts, "raid-atlas-s15")
     assert any("design system" in d.lower() for d in deps)
+
+
+def test_top_risks_render_each_risk_on_its_own_line():
+    from sprintsight.report.writer import _compose_sections, _grounded_facts
+    f = _grounded_facts(
+        {"team": "Boreas", "audience": "exec", "artifacts": artifacts_for("Boreas", [15])}
+    )
+    s = _compose_sections(f)
+    lines = [ln for ln in s["top_risks"].splitlines() if ln.strip()]
+    assert len(lines) >= 2, "Boreas exec has multiple risks; they must not run together"
+    assert all(ln.startswith("- ") for ln in lines), "each risk is its own bullet"
