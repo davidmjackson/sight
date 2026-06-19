@@ -94,10 +94,11 @@ Each dimension is scored 1 (poor) to 5 (excellent). The judge prompt spells out 
 versus a 1 looks like for each dimension, so scores are anchored, not vibes.
 
 ### 3.3 Pass interpretation (advisory)
-For each report, record the four scores and their mean. Provisional bar for "readable":
-every dimension >= 3 AND mean >= 4. This bar is RECORDED, not enforced, until calibration
-passes. The exact numbers can be tuned against the calibration anchors before any promotion
-to a gate.
+For each report, record the four scores and their mean. Bar for "readable":
+every dimension >= 3 AND mean >= 3.5. This started at mean >= 4 and was tuned down against
+the live calibration run on 2026-06-19: the per-dimension floor cleanly rejects all three bad
+anchors, while the good anchor scored 4/4/3/4 (mean 3.75) and a bar of 4 wrongly failed it.
+This bar is RECORDED, not enforced, until calibration passes and the judge is promoted to a gate.
 
 ### 3.4 Model and isolation
 - Provider: Anthropic (consistent with the stack), structured output.

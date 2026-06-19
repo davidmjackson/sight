@@ -23,7 +23,7 @@ Output: a `JudgeScore` with:
 - `scores`: one integer (1 to 5) per dimension.
 - `reasons`: one short string per dimension explaining the score.
 - `mean`: average score across all four dimensions.
-- `passes`: True only when every dimension is at least 3 AND the mean is at least 4.0.
+- `passes`: True only when every dimension is at least 3 AND the mean is at least 3.5 (tuned against the live calibration run; see section on calibration).
 
 ## 3. The four dimensions
 

@@ -19,9 +19,12 @@ DEFAULT_MODEL = "claude-sonnet-4-6"  # same family as the writer; judge has its 
 
 DIMENSIONS = ("clarity", "audience_fit", "coherence", "actionability")
 
-# Advisory pass bar (spec section 3.3): every dimension >= 3 AND mean >= 4. Tunable pre-gate.
+# Advisory pass bar (spec section 3.3): every dimension >= 3 AND mean >= 3.5.
+# Tuned against the live calibration run (2026-06-19): the per-dimension floor cleanly
+# rejects all three bad anchors, while a strong report (good-exec scored 4/4/3/4, mean 3.75)
+# must clear the bar. mean >= 4 wrongly failed it; 3.5 admits it with margin.
 MIN_PER_DIMENSION = 3
-MIN_MEAN = 4.0
+MIN_MEAN = 3.5
 
 # (system_prompt, user_prompt, schema) -> {dimension: {"score": int, "reason": str}}
 Grader = Callable[[str, str, dict[str, Any]], dict[str, Any]]

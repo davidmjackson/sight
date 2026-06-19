@@ -40,10 +40,21 @@ def test_judge_fails_bar_when_one_dimension_low():
     assert score.passes is False
 
 
-def test_judge_fails_bar_when_mean_below_four_even_if_each_at_least_three():
+def test_judge_fails_bar_when_mean_below_bar_even_if_each_at_least_three():
     score = make_judge(grade=_fake_grader({d: 3 for d in DIMENSIONS}))(_report(), "exec")
-    # every dimension == 3 (>= MIN_PER_DIMENSION) but mean 3.0 < MIN_MEAN 4.0
+    # every dimension == 3 (>= MIN_PER_DIMENSION) but mean 3.0 < MIN_MEAN 3.5
     assert score.passes is False
+
+
+def test_judge_passes_strong_report_with_one_middling_dimension():
+    # The good-exec calibration shape: 4/4/3/4, mean 3.75. A strong report with one
+    # merely-fine dimension must clear the tuned bar (every dim >= 3 AND mean >= 3.5).
+    # Guards against MIN_MEAN drifting back up and failing a genuinely good report.
+    scores = {d: 4 for d in DIMENSIONS}
+    scores["coherence"] = 3
+    score = make_judge(grade=_fake_grader(scores))(_report(), "exec")
+    assert score.mean == 3.75
+    assert score.passes is True
 
 
 def test_judge_handles_missing_dimension_as_failing():
