@@ -72,3 +72,29 @@ def test_top_risks_render_each_risk_on_its_own_line():
     lines = [ln for ln in s["top_risks"].splitlines() if ln.strip()]
     assert len(lines) >= 2, "Boreas exec has multiple risks; they must not run together"
     assert all(ln.startswith("- ") for ln in lines), "each risk is its own bullet"
+
+
+def test_exec_ask_points_to_a_logged_risk_when_risks_exist():
+    from sprintsight.report.writer import _compose_sections, _grounded_facts
+    f = _grounded_facts(
+        {"team": "Boreas", "audience": "exec", "artifacts": artifacts_for("Boreas", [15])}
+    )
+    ask = _compose_sections(f)["ask"]
+    assert "Recommended next step" in ask
+    assert "Decision needed: none" not in ask          # the old dead end is gone
+    assert f.risks[0].rstrip(". ").strip() in ask        # names a real logged risk
+    assert "owned" in ask                                # forward-looking action
+
+
+def test_exec_ask_with_no_risks_is_forward_but_needs_no_decision():
+    from sprintsight.report.audience import PROFILES
+    from sprintsight.report.writer import Facts, _exec_ask
+    f = Facts(
+        team="Quiet", audience="exec", profile=PROFILES["exec"],
+        burndown_id="b", status_id="s", raid_id="r", metrics=None,
+        rag="green", rag_cite="s", risks=[], deps=[], looking_ahead="",
+        claims=[], insufficient=False,
+    )
+    ask = _exec_ask(f)
+    assert "No decision needed this period" in ask
+    assert "on track" in ask

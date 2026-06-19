@@ -167,13 +167,35 @@ def _grounded_facts(inputs: dict[str, Any]) -> Facts:
     )
 
 
+def _exec_ask(f: Facts) -> str:
+    """Grounded, forward-looking exec ask.
+
+    Keys on whether risks are logged (a report can be reported green yet still carry
+    risks). Names only a risk already logged and recommends an owner be confirmed; it
+    invents no owner, date, or decision. Human-in-the-loop: this is recommend-only prose.
+    """
+    risks = f.risks[:3]
+    if not risks:
+        return "No decision needed this period; delivery on track."
+    top = risks[0].rstrip(". ").strip()
+    if len(risks) == 1:
+        return (
+            f"Recommended next step: one risk logged ({top}); "
+            "confirm it is owned and tracked before sprint close."
+        )
+    return (
+        f"Recommended next step: {len(risks)} risks logged (see above). "
+        f"The most exposed is {top}; confirm it is owned and tracked before sprint close."
+    )
+
+
 def _compose_sections(f: Facts) -> dict[str, str]:
     sections: dict[str, str] = {}
     if f.profile.name == "exec":
         sections["overall_rag"] = f"Overall delivery status is {f.rag}."
         top = f.risks[:3]
         sections["top_risks"] = _as_list(top) if top else "No material risks reported."
-        sections["ask"] = "Decision needed: none this period."
+        sections["ask"] = _exec_ask(f)
     elif f.profile.name == "programme":
         sections["overall_rag"] = f"Delivery status {f.rag}."
         sections["risks"] = _as_list(f.risks) if f.risks else "No risks logged."
