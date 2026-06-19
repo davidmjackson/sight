@@ -53,7 +53,8 @@ def _run_judge_pass(writer) -> None:
 
 
 def main() -> int:
-    report = run_report_eval(_select_writer())
+    writer = _select_writer()
+    report = run_report_eval(writer)
     print(json.dumps(report.summary(), indent=2))
     print("\nPer-case:")
     for r in report.results:
@@ -63,7 +64,10 @@ def main() -> int:
         if r.error:
             print(f"                   error: {r.error}")
     if "--judge" in sys.argv:
-        _run_judge_pass(_select_writer())
+        try:
+            _run_judge_pass(writer)
+        except Exception as exc:  # noqa: BLE001 - advisory pass must never change the exit code
+            print(f"\n[--judge] error (advisory, ignored): {exc}")
     return 0 if report.pass_rate == 1.0 else 1
 
 
