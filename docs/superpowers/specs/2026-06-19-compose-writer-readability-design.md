@@ -124,3 +124,35 @@ Definition of Done:
 Single focused Story, a new SS-7 child (continues the readability thread). Built eval-first via
 the normal SDD flow (fresh implementer plus independent reviewer per task). New unit tests for
 the renderer and the forward-looking ask rule. Existing tests must stay green.
+
+## Result (2026-06-19)
+
+Built via SDD: Tasks 1 to 3 (renderer, list-rendered risks, forward-looking ask) each shipped
+with a fresh implementer plus an independent reviewer, all approved. Deterministic gate stayed
+green throughout (ruff clean, 80 passed / 3 skipped, watermelon 4/4, report-quality 4/4 exit 0).
+
+Live judge after Tasks 1 to 3 showed the structural fixes lifted clarity to 3 but the reports
+were still below the readability bar. The judge's written reasons surfaced a real tension: it
+demanded a named owner, a due date, and an exec decision (actionability), and business-impact
+synthesis (audience_fit), neither of which the grounded deterministic writer can produce without
+fabricating. One of our own fixes (the Task 3 ask) backfired: the judge called it circular (it
+repeated the risk text) and team-directed.
+
+David's call: keep the gains, fix the ask, and recalibrate ONLY the actionability dimension so a
+grounded recommendation is sufficient (no invented owner/date/decision required), guarded by the
+calibration meta-eval. After that change (commit 216ef14):
+
+- Calibration held 4/4 live: good-exec still 5/5/5/5; the vague-ask bad anchor still actionability
+  1. The bar was corrected, not lowered.
+- compose (the CI gate and offline fallback): boreas-exec mean 3.0 (clarity 4, audience_fit 2,
+  coherence 3, actionability 3); atlas-programme mean 2.2. Still below the green bar by design;
+  audience_fit (business-impact narrative) is the deterministic writer's ceiling.
+- LLM writer under the recalibrated judge: boreas-exec mean 4.2 PASS (5/4/5/3); atlas-programme
+  mean 3.0 (one dimension from green, actionability 2). audience_fit was NOT recalibrated, so the
+  LLM writer's 4 there is genuine narrative quality, confirming the recalibration was principled.
+
+Conclusion: the deterministic writer plateaus around "clean and grounded but terse"; clearing the
+readability bar is narrative-synthesis work, which is the LLM writer's job. Next arc (David's
+decision): tune the LLM writer's prose to clear the bar on both audiences, using the judge as the
+promotion candidate (advisory to gate). compose stays the grounded gate and fallback. No further
+rubric softening.

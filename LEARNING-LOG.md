@@ -128,4 +128,43 @@ To avoid sending live data to the AI in tests, the judge is key-gated (it only r
 
 ---
 
+## Entry 5 (2026-06-19): The AI writes the words, but it cannot make up the facts
+
+**Your definition (the one to keep):** The AI is wired so it cannot produce fabricated output. The facts come from the skeleton, not from the AI. The term is "grounded by construction": you build it so bad output is impossible by design. That is also why the eval's no-fabrication check cannot fail. And a RAG rating never comes from someone's opinion, it comes from the actual metrics, enforced by the application.
+
+That is right. Two things to add so it is complete: the AI is not idle, it writes all the prose (the readable sentences), it just never owns the facts; and there is a backstop, if its prose ever breaks a rule a checker swaps that section for the plain version. Everything below is the why and the how.
+
+**What it is.** Every report is split into two layers.
+- The skeleton: every number, status, and cited fact, built by plain deterministic code reading the real data. The AI never touches it.
+- The prose: the sentences that join the facts into readable, audience-tuned English. The only part the AI writes.
+The AI is handed the facts and asked to write them up. It is never asked what the facts are. So an invented figure has nowhere to land.
+
+**Analogy.** A courtroom. The clerk enters the evidence (exhibits, dates, figures) into the record and it is fixed. The barrister writes a persuasive speech around that evidence but cannot add new evidence mid-speech. The words are theirs, the facts are not. A line that strays beyond the evidence gets struck.
+
+**The safety net.** If the AI's prose breaks the rules (too long, or sneaks in a claim), a validator throws that section away and falls back to the plain deterministic version. Worst case is a less elegant sentence, never a wrong one.
+
+**Why this name.** "Grounded by construction" (or "correct by construction") means you arrange things so the bad outcome is impossible by design, not just discouraged. The no-fabrication eval passes by construction: the wiring will not let it fail, rather than us getting lucky on a run.
+
+**You already know this idea.** It is "separate data from judgement" turned into code. Data (facts, citations) is owned by deterministic code. Judgement (phrasing, emphasis, tone) is the AI's. You never let a status RAG rating come from gut feel; it came from the metrics, with the narrative wrapped around it. Same split, now enforced by the machine.
+
+**In Sprintsight.** This is what lets an LLM sit next to an exec report without the usual risk. The fluent, audience-tuned writing is real AI value. The trust (cited, accurate, no invented numbers) is protected by the structure, not by hope. It is the line between a clever demo and production-grade. Code lives in sprintsight/report/llm_writer.py; the deterministic compose stays as the fallback and the CI gate.
+
+---
+
+## Entry 6 (2026-06-19): When the marker asks for something you are not allowed to invent
+
+**What happened, in plain terms.** We pointed our readability marker (the LLM-as-judge from Entry 4) at our real reports. It kept marking the "what to do next" line down hard, because it wanted a named owner, a due date, and a specific decision. We do not have those in the data, and our number-one rule is that we never make facts up (Entry 5). So the marker was asking for the one thing we are forbidden to produce. The marker and our core principle were pulling in opposite directions.
+
+**The new idea worth keeping.** When your quality check demands something you must never fabricate, you have three moves, and only one is honest. (1) Invent the owner and date to pass: forbidden, it breaks the whole product. (2) Lower the bar so any weak answer passes: that is gaming, you learn nothing. (3) Correct what the bar actually asks for: tell the marker that a grounded recommendation ("this is the most exposed risk, escalate if it slips") is a full answer, and that the absence of an invented owner or date is not a fault. We did (3).
+
+**The guard that makes (3) honest, not just (1) in disguise.** We have a second check that grades the marker itself against known-good and known-bad example reports (the calibration meta-eval, Entry 4). After we adjusted the bar, we re-ran it: the genuinely good report still scored top marks, and the deliberately weak "vague ask" report still failed. So we corrected a rule that demanded fabrication, we did not quietly wave bad writing through. If that guard had slipped, we would have backed the change out.
+
+**Analogy.** An exam question asks "name the suspect." But you are a forensics lab that is only allowed to report what the evidence proves, and the evidence does not name a suspect. You do not guess a name (fabrication) and you do not accept blank answers from everyone (lowering the bar). You fix the question to "state what the evidence supports," and you re-check that strong and weak answers still sort correctly.
+
+**The other thing we learned.** The plain deterministic writer hit a ceiling around "clean and correct but terse." Pushing past it (real business-impact narrative) is exactly what the AI writer is for: under the corrected bar, the AI writer passed the exec report outright. That is the case for the next piece of work.
+
+**In Sprintsight.** The corrected dimension lives in the judge prompt (`sprintsight/evals/judge.py`, the actionability definition); the guard is `scripts/run_calibration.py` over the anchors in `sprintsight/evals/calibration.py`; the writer fixes are in `sprintsight/report/writer.py`. Compose stays the grounded fallback and CI gate; the AI writer is the path to a fully passing report.
+
+---
+
 *Next entries get added when the build introduces a genuinely new idea. Ask any time for an entry on something already above if you want it deeper.*
