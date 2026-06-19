@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from sprintsight.report.contract import Report
+from sprintsight.report.render import render_report_markdown
 
 DEFAULT_MODEL = "claude-sonnet-4-6"  # same family as the writer; judge has its own prompt/role
 
@@ -61,8 +62,8 @@ class JudgeScore:
 
 
 def _user_prompt(report: Report, audience: str) -> str:
-    body = "\n\n".join(f"## {k}\n{v}" for k, v in report.sections.items())
-    return f"Audience: {audience}.\nReport for team {report.team}:\n\n{body or '(no sections)'}"
+    body = render_report_markdown(report)
+    return f"Audience: {audience}.\nReport for team {report.team}:\n\n{body}"
 
 
 def _schema() -> dict[str, Any]:
