@@ -1,4 +1,4 @@
-# Sprintsight — Eval Spec: Readability Judge (SS-7)
+# Sprintsight Eval Spec: Readability Judge (SS-7)
 
 Status: ACTIVE 2026-06-19 (advisory; not yet a build gate). Satisfies SS-7 (Stage 4).
 Depends on SS-1.5 (report contract). Code: sprintsight/evals/judge.py.

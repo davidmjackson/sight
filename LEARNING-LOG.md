@@ -1,4 +1,4 @@
-# Sprintsight — Learning Log
+# Sprintsight Learning Log
 
 **What this is.** A plain-English running record of the ideas behind Sprintsight, written for David. No jargon without a translation. This document is yours. If an entry is pitched too high or too low, say so and we adjust the level.
 
