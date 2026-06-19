@@ -10,7 +10,12 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from sprintsight.report.audience import MECHANICS_TERMS, TICKET_ID, AudienceProfile
+from sprintsight.report.audience import (
+    MECHANICS_TERMS,
+    TICKET_ID,
+    AudienceProfile,
+    contains_mechanics,
+)
 from sprintsight.report.contract import Report
 from sprintsight.report.writer import (
     Facts,
@@ -27,7 +32,22 @@ Completer = Callable[[str, str, dict[str, Any]], dict[str, str]]
 _SYSTEM = (
     "You write concise, audience-tuned delivery status prose. You are given already-"
     "verified facts. Write only from those facts. Never invent numbers, dates, or ticket "
-    "ids. Return one short paragraph per requested section."
+    "ids. Return one short paragraph per requested section.\n"
+    "Lead with the one to watch: the risks and dependencies you are given are already in "
+    "priority order, so treat the first one as the item to watch. Do not claim a severity "
+    "ranking and do not use the words 'highest', 'most severe', or 'biggest'.\n"
+    "For each risk and dependency, give a concrete watch-point taken from that item's own "
+    "wording: what specifically to monitor, or what a slip would look like and why it "
+    "matters. Never write passive reassurance such as 'the team is aware', 'planning "
+    "accordingly', or 'alignment will be maintained'.\n"
+    "Do not repeat the same point in more than one section.\n"
+    "For an exec audience, give the business outcome and the single thing to watch, not a "
+    "flat list of equal-weight risks. For a programme audience, give trajectory and decision "
+    "triggers; do not quote raw velocity or carried-over point counts in the prose.\n"
+    "Example. Bad (passive, vague): 'The team is aware of the vendor dependency and "
+    "alignment will be maintained.' Good (grounded watch-point): 'Vendor API rate limits "
+    "are untested at peak load. Watch whether the load test clears before the launch gate, "
+    "since a failure would push the integration milestone.'"
 )
 
 
@@ -46,12 +66,26 @@ def _user_prompt(f: Facts) -> str:
             f"Metrics: committed {int(m.committed)}, completed {int(m.completed)}, "
             f"velocity {int(m.velocity)}, carry-over {int(m.carry_over)}."
         )
-    lines.append(f"Word budget for the whole report: {p.max_words or 'no strict cap'}.")
+    if p.max_words and p.max_words <= 200:
+        # A tight cap (exec): the report-level cap discards over-length prose wholesale, so
+        # press the writer to land well under it. Generous caps (programme) get a gentle nudge
+        # only, so we do not strip the narrative that earns audience-fit.
+        target = int(p.max_words * 0.75)
+        lines.append(
+            f"HARD WORD LIMIT: the entire report, including the figures, must stay under "
+            f"{p.max_words} words. Aim for about {target} words. Lead with the item to watch and "
+            "its watch-point in full; compress every secondary item to a single clause."
+        )
+    elif p.max_words:
+        lines.append(f"Keep the whole report comfortably under {p.max_words} words.")
+    else:
+        lines.append("Word budget: no strict cap, but stay concise.")
     if p.forbid_ticket_ids:
         lines.append("Do NOT mention any ticket ids (e.g. ABC-123).")
     if p.forbid_mechanics:
         lines.append(f"Do NOT mention sprint mechanics: {', '.join(MECHANICS_TERMS)}.")
     lines.append(f"Write these sections: {', '.join(p.required_sections)}.")
+    lines.append("The first risk listed is your lead item to watch.")
     return "\n".join(lines)
 
 
@@ -76,7 +110,7 @@ def _section_violates(text: str, profile: AudienceProfile) -> bool:
     # signals misbehaviour — fall back regardless of whether the profile explicitly forbids them.
     if re.search(TICKET_ID, text):
         return True
-    if profile.forbid_mechanics and any(t in text.lower() for t in MECHANICS_TERMS):
+    if profile.forbid_mechanics and contains_mechanics(text):
         return True
     return False
 

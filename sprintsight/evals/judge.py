@@ -9,6 +9,7 @@ a fake and CI never calls the API. Advisory by design: callers read JudgeScore.p
 does not gate the build until the calibration meta-eval proves the judge (see calibration.py).
 """
 
+import statistics
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -102,6 +103,30 @@ def make_judge(grade: Grader | None = None, model: str = DEFAULT_MODEL) -> Judge
         return JudgeScore(scores=scores, reasons=reasons)
 
     return judge
+
+
+def sample_judge(judge: JudgeFn, report: Report, audience: str, n: int = 3) -> JudgeScore:
+    """Run the judge `n` times and return a JudgeScore of per-dimension low-medians.
+
+    The judge is an LLM and its scores wobble run to run (we saw exec swing 4.2 -> 2.75 with
+    no code change). Sampling and taking the median de-noises that without a large budget.
+    `median_low` always returns an actually-sampled integer (no 3.5 averages) and leans to the
+    stricter side on an even split, which suits a deliberately strict grader. Failed samples are
+    dropped; if every sample fails we raise, because there is nothing to report.
+    """
+    samples: list[JudgeScore] = []
+    for _ in range(n):
+        try:
+            samples.append(judge(report, audience))
+        except Exception:  # noqa: BLE001 - advisory path: drop a bad sample, do not abort
+            continue
+    if not samples:
+        raise RuntimeError("all judge samples failed")
+    scores = {
+        d: int(statistics.median_low(s.scores.get(d, 0) for s in samples))
+        for d in DIMENSIONS
+    }
+    return JudgeScore(scores=scores, reasons=samples[-1].reasons)
 
 
 def _anthropic_grader(model: str) -> Grader:

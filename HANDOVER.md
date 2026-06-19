@@ -18,6 +18,8 @@ LEARNING-LOG entry (with David's restatement) and deletes the line once that ent
 Format per item: concept | one line on what is new | code/stage pointer | date flagged.
 
 - Correcting a quality bar that demands fabrication | when the readability judge wanted owners/dates/decisions our no-fabrication rule forbids inventing, we corrected the rubric (not the facts, not the bar), guarded by the calibration meta-eval | sprintsight/evals/judge.py (actionability) + scripts/run_calibration.py + writer-readability arc | flagged 2026-06-19
+- De-noising an LLM judge with a median | a single LLM-judge run wobbles run to run (exec swung 4.2 to 2.75 with no code change), so we sample it 3 times and take the median; a noisy judge cannot be a CI gate yet | sprintsight/evals/judge.py sample_judge + scripts/run_report_eval.py --judge | flagged 2026-06-19
+- When a measurement reveals a bug, not a quality gap | the LLM exec prose was rejected because the mechanics filter matched "points" as a substring (catching its own "watch-points"); the fix was a correct boundary matcher, not prose-tweaking; lesson = read why a score is low before changing the writer | sprintsight/report/audience.py contains_mechanics + llm-writer-readability arc | flagged 2026-06-19
 
 ## Where we are
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
@@ -82,10 +84,21 @@ Stage 4 follow-up: writer-readability arc (Epic SS-7), on branch `writer-readabi
   deterministic ceiling, blocked on audience_fit = business-impact narrative). LLM writer under the
   recalibrated judge: boreas-exec 4.2 PASS, atlas-programme 3.0 (one dim off). Deterministic gate
   unchanged + green (watermelon 4/4, report 4/4, 80 passed/3 skipped, ruff clean).
-- NEXT ARC (David's decision): tune the LLM writer's prose to clear the readability bar on BOTH
-  audiences (programme actionability is the remaining gap), with the judge as the advisory->gate
-  promotion candidate. compose stays the grounded CI gate + offline fallback. No further rubric
-  softening. Docs: docs/superpowers/{specs,plans}/2026-06-19-compose-writer-readability*.
+- FOLLOW-ON ARC DONE (LLM writer readability, branch `llm-writer-readability-arc`): the LLM writer
+  now clears the advisory judge on BOTH audiences, measured as the median of 3 live samples:
+  boreas-exec 5.00 PASS (5/5/5/5), atlas-programme 4.00 PASS (5/4/3/4). Shipped: (1) writer prompt
+  directives + a worked exemplar (lead with the one to watch, grounded watch-points, no passive
+  reassurance, register); (2) `sample_judge` 3-sample median in judge.py so the noisy judge is
+  measurable; (3) the advisory `--judge` pass now prints median + noise range. KEY FIX found during
+  live measurement: the mechanics filter matched "points" as a SUBSTRING, so the LLM's own
+  "watch-points" prose was rejected and exec fell back to terse compose (stuck at 2.75). Replaced
+  with a shared boundary-aware `contains_mechanics()` (audience.py, used by writer + eval); allows
+  "watch-points"/"touchpoints" but still catches "38 points"/"story points"/"velocity". Deterministic
+  gate stayed green throughout (89 passed/3 skipped, ruff clean, watermelon 4/4, report 4/4).
+  Judge stays ADVISORY (not promoted to a gate). compose stays the CI gate + offline fallback.
+  Docs: docs/superpowers/{specs,plans}/2026-06-19-llm-writer-readability*.
+- WATCH (for any future judge gate promotion): atlas-programme `coherence` median sits at 3 (the
+  per-dimension floor), so a noisy run could dip it below bar. Promotion still deferred.
 
 Stage 3 (LangGraph, Epic SS-4) — DONE. Jira Story SS-29.
 - Three-node LangGraph graph built in `sprintsight/graph/`: `GraphState` dataclass; node functions
