@@ -40,6 +40,8 @@ MECHANICS_TERMS = ("burndown", "velocity", "story points", "points")
 # wording ("38 points", "story points", "velocity") is caught while unrelated compounds
 # ("watch-points", "touchpoints", "checkpoints") are not. Substring matching used to reject
 # the LLM writer's own "watch-points" prose, forcing a fallback to terse compose output.
+# Boolean use only: alternation order means a bare "points" can match inside "story points",
+# so do NOT reuse this regex to report WHICH term matched, only whether any did.
 _MECHANICS_RE = re.compile(
     r"(?<![\w-])(?:" + "|".join(re.escape(t) for t in MECHANICS_TERMS) + r")(?![\w-])",
     re.IGNORECASE,

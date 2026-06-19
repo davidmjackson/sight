@@ -47,7 +47,17 @@ def _run_judge_pass(writer, n: int = 3) -> None:
             print(f"  {case.name:16} n/a (insufficient evidence)")
             continue
         audience = case.inputs.get("audience", "programme")
-        runs = [judge(report, audience) for _ in range(n)]
+        # Drop a flaky live sample rather than losing the whole case line, matching
+        # sample_judge's own resilience.
+        runs = []
+        for _ in range(n):
+            try:
+                runs.append(judge(report, audience))
+            except Exception as exc:  # noqa: BLE001 - advisory path: skip a bad sample
+                print(f"  {case.name:16} (dropped a judge sample: {exc})")
+        if not runs:
+            print(f"  {case.name:16} n/a (all judge samples failed)")
+            continue
         # Feed the already-collected runs to sample_judge so the median logic is shared and the
         # API is not called again. `_q=list(runs)` snapshots the list per call so `runs` stays
         # intact for the range calculation below.
