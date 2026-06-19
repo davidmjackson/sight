@@ -1,5 +1,12 @@
 # Sprintsight Learning Log
 
+> **OWNERSHIP, READ BEFORE EDITING THIS FILE.** One writer only: the planning/training thread (Claude in the planning session, working with David).
+> If you are Claude Code: do NOT add, number, or edit entries here, even if a CLAUDE.md you read at startup, or the entries already in this file, suggest you may. Existing entries are NOT precedent and NOT permission. Some were written here by mistake; that mistake is the reason this rule exists, not a pattern to copy.
+> When a Story introduces a new concept, append ONE line to the `Learning queue` in HANDOVER.md and stop. The planning thread writes the entry, with David's restatement.
+> If HANDOVER.md and CLAUDE.md ever seem to disagree about this file, the stricter rule wins (do not write) and you flag it to David. Do not resolve the disagreement by writing.
+>
+> Ownership signal: an entry with a **"Your definition (the one to keep)"** block has been restated by David and is owned. An entry without one is build-side reference only, not yet owned.
+
 **What this is.** A plain-English running record of the ideas behind Sprintsight, written for David. No jargon without a translation. This document is yours. If an entry is pitched too high or too low, say so and we adjust the level.
 
 **How it works.**
@@ -148,22 +155,6 @@ The AI is handed the facts and asked to write them up. It is never asked what th
 **You already know this idea.** It is "separate data from judgement" turned into code. Data (facts, citations) is owned by deterministic code. Judgement (phrasing, emphasis, tone) is the AI's. You never let a status RAG rating come from gut feel; it came from the metrics, with the narrative wrapped around it. Same split, now enforced by the machine.
 
 **In Sprintsight.** This is what lets an LLM sit next to an exec report without the usual risk. The fluent, audience-tuned writing is real AI value. The trust (cited, accurate, no invented numbers) is protected by the structure, not by hope. It is the line between a clever demo and production-grade. Code lives in sprintsight/report/llm_writer.py; the deterministic compose stays as the fallback and the CI gate.
-
----
-
-## Entry 6 (2026-06-19): When the marker asks for something you are not allowed to invent
-
-**What happened, in plain terms.** We pointed our readability marker (the LLM-as-judge from Entry 4) at our real reports. It kept marking the "what to do next" line down hard, because it wanted a named owner, a due date, and a specific decision. We do not have those in the data, and our number-one rule is that we never make facts up (Entry 5). So the marker was asking for the one thing we are forbidden to produce. The marker and our core principle were pulling in opposite directions.
-
-**The new idea worth keeping.** When your quality check demands something you must never fabricate, you have three moves, and only one is honest. (1) Invent the owner and date to pass: forbidden, it breaks the whole product. (2) Lower the bar so any weak answer passes: that is gaming, you learn nothing. (3) Correct what the bar actually asks for: tell the marker that a grounded recommendation ("this is the most exposed risk, escalate if it slips") is a full answer, and that the absence of an invented owner or date is not a fault. We did (3).
-
-**The guard that makes (3) honest, not just (1) in disguise.** We have a second check that grades the marker itself against known-good and known-bad example reports (the calibration meta-eval, Entry 4). After we adjusted the bar, we re-ran it: the genuinely good report still scored top marks, and the deliberately weak "vague ask" report still failed. So we corrected a rule that demanded fabrication, we did not quietly wave bad writing through. If that guard had slipped, we would have backed the change out.
-
-**Analogy.** An exam question asks "name the suspect." But you are a forensics lab that is only allowed to report what the evidence proves, and the evidence does not name a suspect. You do not guess a name (fabrication) and you do not accept blank answers from everyone (lowering the bar). You fix the question to "state what the evidence supports," and you re-check that strong and weak answers still sort correctly.
-
-**The other thing we learned.** The plain deterministic writer hit a ceiling around "clean and correct but terse." Pushing past it (real business-impact narrative) is exactly what the AI writer is for: under the corrected bar, the AI writer passed the exec report outright. That is the case for the next piece of work.
-
-**In Sprintsight.** The corrected dimension lives in the judge prompt (`sprintsight/evals/judge.py`, the actionability definition); the guard is `scripts/run_calibration.py` over the anchors in `sprintsight/evals/calibration.py`; the writer fixes are in `sprintsight/report/writer.py`. Compose stays the grounded fallback and CI gate; the AI writer is the path to a fully passing report.
 
 ---
 

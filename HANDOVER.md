@@ -17,7 +17,7 @@ APPENDS one line below. Flag only, do not teach. The training thread turns each 
 LEARNING-LOG entry (with David's restatement) and deletes the line once that entry is committed.
 Format per item: concept | one line on what is new | code/stage pointer | date flagged.
 
-- (none queued)
+- Correcting a quality bar that demands fabrication | when the readability judge wanted owners/dates/decisions our no-fabrication rule forbids inventing, we corrected the rubric (not the facts, not the bar), guarded by the calibration meta-eval | sprintsight/evals/judge.py (actionability) + scripts/run_calibration.py + writer-readability arc | flagged 2026-06-19
 
 ## Where we are
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
