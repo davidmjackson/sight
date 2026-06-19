@@ -98,4 +98,34 @@ That is correct. Everything below is just the why and the how.
 
 ---
 
+## Entry 4 (2026-06-19): LLM-as-judge (grading the soft stuff)
+
+### The problem with deterministic evals
+
+The watermelon eval and the report-quality eval both work by checking a known, fixed answer. Is this team classified as red? Did the report cite its sources? There is one right answer. A machine can mark it automatically. That is what "deterministic" means: the result is the same every time, and there is no argument about whether it is correct.
+
+But some qualities cannot be settled that cleanly. Is this report easy to read? Does it feel right for an executive rather than a developer? Is the argument coherent from start to finish? These things matter a great deal, but they have no single correct answer. A machine cannot mark a multiple-choice answer when there is no answer sheet.
+
+### The solution: a second AI grades the prose
+
+We give a second AI the finished report and a marking rubric (a structured list of things to look for) and ask it to score the prose on four dimensions: clarity, audience fit, coherence, and actionability. Each dimension is scored one to five. To pass, every dimension must hit three or above, and the average must reach four. This is the LLM-as-judge approach: one AI writes, a separate AI grades.
+
+**Analogy.** The deterministic eval is a multiple-choice test marked automatically by a machine. The LLM-as-judge is an essay graded by a second examiner against a marking rubric. The first examiner (the writer) never marks their own work.
+
+### The trap: AI marking its own homework
+
+The obvious risk is that the AI-writer and the AI-judge share the same biases. If the writer uses inflated language, the judge might praise it. We reduce this risk in two ways.
+
+First, the judge has a completely separate prompt and a completely separate role. It is told explicitly to be a critical reader, not a writer. It is given the rubric, not the output it just wrote.
+
+Second, and more importantly, we test the judge before we trust it. We have a set of known anchor reports: some deliberately good, some deliberately bad. Before the judge becomes part of the build gate, we run a calibration meta-eval. The judge must correctly separate the good from the bad. This is called the calibration step. Think of it as giving the examiner a set of papers that have already been graded by the university board, and checking that the examiner's marks agree. If they do not agree, the examiner is not ready to mark real papers.
+
+### Where it sits in Sprintsight right now
+
+The readability judge exists and runs, but it is advisory only. It does not block the build. The deterministic watermelon eval and the report-quality eval still gate the build. The judge becomes a hard gate only once calibration proves it reliably separates good from bad. That is a deliberate choice: trust it first, promote it later.
+
+To avoid sending live data to the AI in tests, the judge is key-gated (it only runs when an API key is present). In the normal automated build, a fake grader stands in.
+
+---
+
 *Next entries get added when the build introduces a genuinely new idea. Ask any time for an entry on something already above if you want it deeper.*
