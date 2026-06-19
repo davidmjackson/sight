@@ -14,7 +14,12 @@ from typing import Any
 
 from sprintsight.evals.fixtures import artifacts_for, load_ground_truth
 from sprintsight.evals.harness import Assertion, Case, CaseResult, SuiteReport, run_suite
-from sprintsight.report.audience import MECHANICS_TERMS, PROFILES, TICKET_ID, AudienceProfile
+from sprintsight.report.audience import (
+    PROFILES,
+    TICKET_ID,
+    AudienceProfile,
+    contains_mechanics,
+)
 from sprintsight.report.contract import Report
 from sprintsight.report.writer import ReportWriter, null_writer
 
@@ -90,7 +95,7 @@ def _audience_fit(profile: AudienceProfile) -> Check:  # D
             return Assertion("audience_fit", False, f"{words} words > cap {profile.max_words}")
         if profile.forbid_ticket_ids and re.search(TICKET_ID, text):
             return Assertion("audience_fit", False, "contains ticket id(s)")
-        if profile.forbid_mechanics and any(t in text.lower() for t in MECHANICS_TERMS):
+        if profile.forbid_mechanics and contains_mechanics(text):
             return Assertion("audience_fit", False, "contains sprint mechanics")
         return Assertion("audience_fit", True, f"{words} words, profile respected")
     return check
@@ -150,8 +155,8 @@ def _audience_triple(writer: ReportWriter) -> CaseResult:
     }
     we, wp, wt = (len(rendered[a].split()) for a in ("exec", "programme", "team"))
     distinct = len(set(rendered.values())) == 3
-    exec_clean = not any(t in rendered["exec"].lower() for t in MECHANICS_TERMS)
-    team_granular = "points" in rendered["team"].lower()
+    exec_clean = not contains_mechanics(rendered["exec"])
+    team_granular = contains_mechanics(rendered["team"])
     ok = distinct and we < wp and we < wt and exec_clean and team_granular
     detail = (f"words exec={we} prog={wp} team={wt}; distinct={distinct} "
               f"exec_clean={exec_clean} team_granular={team_granular}")

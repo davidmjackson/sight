@@ -100,3 +100,22 @@ def test_user_prompt_names_the_lead_item():
         claims=[], insufficient=False,
     )
     assert "first risk listed is your lead item" in _user_prompt(f).lower()
+
+
+def test_user_prompt_sets_a_hard_word_limit_for_capped_audiences():
+    # Exec has a 150-word cap; the prompt must press the LLM to land UNDER it (aiming low),
+    # so rich exec prose is not silently discarded by the report-level cap fallback.
+    from sprintsight.report.audience import PROFILES
+    from sprintsight.report.llm_writer import _user_prompt
+    from sprintsight.report.writer import Facts
+
+    f = Facts(
+        team="Boreas", audience="exec", profile=PROFILES["exec"],
+        burndown_id="b", status_id="s", raid_id="r", metrics=None,
+        rag="green", rag_cite="s",
+        risks=["First risk."], deps=[], looking_ahead="",
+        claims=[], insufficient=False,
+    )
+    prompt = _user_prompt(f).lower()
+    assert "hard word limit" in prompt
+    assert "under 150 words" in prompt

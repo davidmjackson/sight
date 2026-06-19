@@ -4,6 +4,7 @@ Single source of truth for length caps, required section keys, and forbidden det
 markers. Read by both the composer (to shape output) and the eval (to score audience fit).
 """
 
+import re
 from dataclasses import dataclass
 
 
@@ -33,3 +34,18 @@ TICKET_ID = r"[A-Z][A-Z0-9]+-\d+"
 
 # Sprint-mechanics wording an exec report must not contain.
 MECHANICS_TERMS = ("burndown", "velocity", "story points", "points")
+
+# Match a mechanics term only as a standalone word or phrase, never inside a larger token.
+# The lookarounds exclude word characters AND hyphens on both sides, so genuine sprint
+# wording ("38 points", "story points", "velocity") is caught while unrelated compounds
+# ("watch-points", "touchpoints", "checkpoints") are not. Substring matching used to reject
+# the LLM writer's own "watch-points" prose, forcing a fallback to terse compose output.
+_MECHANICS_RE = re.compile(
+    r"(?<![\w-])(?:" + "|".join(re.escape(t) for t in MECHANICS_TERMS) + r")(?![\w-])",
+    re.IGNORECASE,
+)
+
+
+def contains_mechanics(text: str) -> bool:
+    """True if the text uses sprint-mechanics wording as a standalone word or phrase."""
+    return bool(_MECHANICS_RE.search(text))

@@ -10,7 +10,12 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from sprintsight.report.audience import MECHANICS_TERMS, TICKET_ID, AudienceProfile
+from sprintsight.report.audience import (
+    MECHANICS_TERMS,
+    TICKET_ID,
+    AudienceProfile,
+    contains_mechanics,
+)
 from sprintsight.report.contract import Report
 from sprintsight.report.writer import (
     Facts,
@@ -61,7 +66,20 @@ def _user_prompt(f: Facts) -> str:
             f"Metrics: committed {int(m.committed)}, completed {int(m.completed)}, "
             f"velocity {int(m.velocity)}, carry-over {int(m.carry_over)}."
         )
-    lines.append(f"Word budget for the whole report: {p.max_words or 'no strict cap'}.")
+    if p.max_words and p.max_words <= 200:
+        # A tight cap (exec): the report-level cap discards over-length prose wholesale, so
+        # press the writer to land well under it. Generous caps (programme) get a gentle nudge
+        # only, so we do not strip the narrative that earns audience-fit.
+        target = int(p.max_words * 0.75)
+        lines.append(
+            f"HARD WORD LIMIT: the entire report, including the figures, must stay under "
+            f"{p.max_words} words. Aim for about {target} words. Lead with the item to watch and "
+            "its watch-point in full; compress every secondary item to a single clause."
+        )
+    elif p.max_words:
+        lines.append(f"Keep the whole report comfortably under {p.max_words} words.")
+    else:
+        lines.append("Word budget: no strict cap, but stay concise.")
     if p.forbid_ticket_ids:
         lines.append("Do NOT mention any ticket ids (e.g. ABC-123).")
     if p.forbid_mechanics:
@@ -92,7 +110,7 @@ def _section_violates(text: str, profile: AudienceProfile) -> bool:
     # signals misbehaviour — fall back regardless of whether the profile explicitly forbids them.
     if re.search(TICKET_ID, text):
         return True
-    if profile.forbid_mechanics and any(t in text.lower() for t in MECHANICS_TERMS):
+    if profile.forbid_mechanics and contains_mechanics(text):
         return True
     return False
 
