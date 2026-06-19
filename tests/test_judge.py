@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from sprintsight.evals.judge import DIMENSIONS, _anthropic_grader, make_judge
+from sprintsight.evals.judge import DIMENSIONS, _anthropic_grader, make_judge, sample_judge
 from sprintsight.report.contract import Report
 
 
@@ -91,3 +91,56 @@ def test_judge_prompt_uses_human_headings_not_raw_keys():
     make_judge(grade=grader)(report, "exec")
     assert "## Overall status" in captured["user"]
     assert "overall_rag" not in captured["user"]
+
+
+def _sequencing_grader(seq_by_dim: dict[str, list[int]]):
+    """Fake grader that returns a different score per call, walking each dimension's list."""
+    state = {"i": 0}
+
+    def grade(system, user, schema):
+        i = state["i"]
+        state["i"] += 1
+        return {d: {"score": seq_by_dim[d][i], "reason": f"r{i}-{d}"} for d in seq_by_dim}
+
+    return grade
+
+
+def test_sample_judge_takes_per_dimension_median():
+    # clarity samples [2,4,4] -> median 4; every other dim constant at 4.
+    seq = {d: [4, 4, 4] for d in DIMENSIONS}
+    seq["clarity"] = [2, 4, 4]
+    judge = make_judge(grade=_sequencing_grader(seq))
+    score = sample_judge(judge, _report(), "exec", n=3)
+    assert score.scores["clarity"] == 4
+    assert score.scores["audience_fit"] == 4
+    assert score.mean == 4.0
+
+
+def test_sample_judge_single_sample_equals_one_run():
+    seq = {d: [3] for d in DIMENSIONS}
+    judge = make_judge(grade=_sequencing_grader(seq))
+    score = sample_judge(judge, _report(), "exec", n=1)
+    assert score.scores == {d: 3 for d in DIMENSIONS}
+
+
+def test_sample_judge_drops_failed_samples():
+    calls = {"i": 0}
+
+    def flaky(system, user, schema):
+        calls["i"] += 1
+        if calls["i"] == 2:  # second call blows up; it must be dropped, not fatal
+            raise RuntimeError("boom")
+        return {d: {"score": 4, "reason": "ok"} for d in DIMENSIONS}
+
+    score = sample_judge(make_judge(grade=flaky), _report(), "exec", n=3)
+    assert score.scores == {d: 4 for d in DIMENSIONS}
+
+
+def test_sample_judge_raises_when_all_samples_fail():
+    import pytest as _pytest
+
+    def always_fails(system, user, schema):
+        raise RuntimeError("boom")
+
+    with _pytest.raises(RuntimeError):
+        sample_judge(make_judge(grade=always_fails), _report(), "exec", n=3)
