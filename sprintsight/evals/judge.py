@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from sprintsight.report.contract import Report
+from sprintsight.report.render import render_report_markdown
 
 DEFAULT_MODEL = "claude-sonnet-4-6"  # same family as the writer; judge has its own prompt/role
 
@@ -37,7 +38,11 @@ _SYSTEM = (
     "Dimensions: clarity (plain English, jargon-free, readable by a non-engineer); "
     "audience_fit (register matches the audience: exec = outcome and decision, team = granular); "
     "coherence (one joined-up narrative, not a disconnected list; no repetition); "
-    "actionability (the ask or decision-needed is specific; the reader knows what to do next). "
+    "actionability (the report surfaces the most material item and a specific, grounded "
+    "recommended focus or next step, so the reader knows what to watch or decide; a grounded "
+    "recommendation is fully sufficient, so do NOT require or reward an invented owner, calendar "
+    "date, or manufactured decision, and do not penalise their absence when the source data does "
+    "not contain them). "
     "A 5 is exemplary, a 1 is unacceptable. Be a strict grader."
 )
 
@@ -61,8 +66,8 @@ class JudgeScore:
 
 
 def _user_prompt(report: Report, audience: str) -> str:
-    body = "\n\n".join(f"## {k}\n{v}" for k, v in report.sections.items())
-    return f"Audience: {audience}.\nReport for team {report.team}:\n\n{body or '(no sections)'}"
+    body = render_report_markdown(report)
+    return f"Audience: {audience}.\nReport for team {report.team}:\n\n{body}"
 
 
 def _schema() -> dict[str, Any]:

@@ -20,11 +20,13 @@ deliberately fixing that. Apply it here too:
   words. If a doc cannot be skim-read by a non-engineer, put a plain-English summary at the top.
 - No em dashes in anything he reads (use commas, periods, or parentheses). Short paragraphs,
   tight bullets, lead with the verdict, end with clear next actions.
-- Keep the learning log current: LEARNING-LOG.md (repo root) is a plain-English record of the
-  concepts behind the build. When a Story introduces a genuinely NEW concept, add a short entry
-  (what it is, an analogy, where it shows up in Sprintsight). Do not let it sprawl; one concept
-  per entry. This is build context, not a chore: it is how the product owner stays able to
-  defend the work.
+- Learning handoff (you flag, you do not write the log): LEARNING-LOG.md (repo root) is owned by
+  the planning/training thread, which is its ONE writer. Do NOT edit LEARNING-LOG.md from here.
+  When a Story introduces a genuinely NEW concept a non-engineer would need explained, append one
+  line to the `Learning queue` section in HANDOVER.md (format: concept | one line on what is new |
+  code/stage pointer | date). Flag only, do not teach. The training thread turns each flag into a
+  log entry with David's restatement, then clears the line. This is how the product owner stays
+  able to defend the work.
 
 ## What Sprintsight is (one line)
 An AI delivery-intelligence layer that reads across delivery tools and produces audience-tuned,

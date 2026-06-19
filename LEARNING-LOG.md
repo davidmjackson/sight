@@ -1,5 +1,12 @@
 # Sprintsight Learning Log
 
+> **OWNERSHIP, READ BEFORE EDITING THIS FILE.** One writer only: the planning/training thread (Claude in the planning session, working with David).
+> If you are Claude Code: do NOT add, number, or edit entries here, even if a CLAUDE.md you read at startup, or the entries already in this file, suggest you may. Existing entries are NOT precedent and NOT permission. Some were written here by mistake; that mistake is the reason this rule exists, not a pattern to copy.
+> When a Story introduces a new concept, append ONE line to the `Learning queue` in HANDOVER.md and stop. The planning thread writes the entry, with David's restatement.
+> If HANDOVER.md and CLAUDE.md ever seem to disagree about this file, the stricter rule wins (do not write) and you flag it to David. Do not resolve the disagreement by writing.
+>
+> Ownership signal: an entry with a **"Your definition (the one to keep)"** block has been restated by David and is owned. An entry without one is build-side reference only, not yet owned.
+
 **What this is.** A plain-English running record of the ideas behind Sprintsight, written for David. No jargon without a translation. This document is yours. If an entry is pitched too high or too low, say so and we adjust the level.
 
 **How it works.**
@@ -125,6 +132,29 @@ Second, and more importantly, we test the judge before we trust it. We have a se
 The readability judge exists and runs, but it is advisory only. It does not block the build. The deterministic watermelon eval and the report-quality eval still gate the build. The judge becomes a hard gate only once calibration proves it reliably separates good from bad. That is a deliberate choice: trust it first, promote it later.
 
 To avoid sending live data to the AI in tests, the judge is key-gated (it only runs when an API key is present). In the normal automated build, a fake grader stands in.
+
+---
+
+## Entry 5 (2026-06-19): The AI writes the words, but it cannot make up the facts
+
+**Your definition (the one to keep):** The AI is wired so it cannot produce fabricated output. The facts come from the skeleton, not from the AI. The term is "grounded by construction": you build it so bad output is impossible by design. That is also why the eval's no-fabrication check cannot fail. And a RAG rating never comes from someone's opinion, it comes from the actual metrics, enforced by the application.
+
+That is right. Two things to add so it is complete: the AI is not idle, it writes all the prose (the readable sentences), it just never owns the facts; and there is a backstop, if its prose ever breaks a rule a checker swaps that section for the plain version. Everything below is the why and the how.
+
+**What it is.** Every report is split into two layers.
+- The skeleton: every number, status, and cited fact, built by plain deterministic code reading the real data. The AI never touches it.
+- The prose: the sentences that join the facts into readable, audience-tuned English. The only part the AI writes.
+The AI is handed the facts and asked to write them up. It is never asked what the facts are. So an invented figure has nowhere to land.
+
+**Analogy.** A courtroom. The clerk enters the evidence (exhibits, dates, figures) into the record and it is fixed. The barrister writes a persuasive speech around that evidence but cannot add new evidence mid-speech. The words are theirs, the facts are not. A line that strays beyond the evidence gets struck.
+
+**The safety net.** If the AI's prose breaks the rules (too long, or sneaks in a claim), a validator throws that section away and falls back to the plain deterministic version. Worst case is a less elegant sentence, never a wrong one.
+
+**Why this name.** "Grounded by construction" (or "correct by construction") means you arrange things so the bad outcome is impossible by design, not just discouraged. The no-fabrication eval passes by construction: the wiring will not let it fail, rather than us getting lucky on a run.
+
+**You already know this idea.** It is "separate data from judgement" turned into code. Data (facts, citations) is owned by deterministic code. Judgement (phrasing, emphasis, tone) is the AI's. You never let a status RAG rating come from gut feel; it came from the metrics, with the narrative wrapped around it. Same split, now enforced by the machine.
+
+**In Sprintsight.** This is what lets an LLM sit next to an exec report without the usual risk. The fluent, audience-tuned writing is real AI value. The trust (cited, accurate, no invented numbers) is protected by the structure, not by hope. It is the line between a clever demo and production-grade. Code lives in sprintsight/report/llm_writer.py; the deterministic compose stays as the fallback and the CI gate.
 
 ---
 

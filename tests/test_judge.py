@@ -77,3 +77,17 @@ def test_anthropic_grader_constructs_without_calling_api():
 def test_live_judge_scores_a_clean_report_highly():
     score = make_judge()(_report(), "exec")
     assert score.mean >= 3.0, score.scores
+
+
+def test_judge_prompt_uses_human_headings_not_raw_keys():
+    captured = {}
+
+    def grader(system, user, schema):
+        captured["user"] = user
+        return {d: {"score": 4, "reason": "x"} for d in DIMENSIONS}
+
+    report = Report(team="Boreas", audience="exec",
+                    sections={"overall_rag": "Green.", "ask": "No decision."})
+    make_judge(grade=grader)(report, "exec")
+    assert "## Overall status" in captured["user"]
+    assert "overall_rag" not in captured["user"]
