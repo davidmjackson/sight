@@ -16,6 +16,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from sprintsight.evals.fixtures import Artifact
+from sprintsight.evals.tracing import NoOpTracer, Tracer, get_tracer
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.nodes import (
     RetrieverFactory,
@@ -35,16 +36,37 @@ def default_make_retriever(artifacts: dict[str, Artifact]) -> Retriever:
     return InMemoryRetriever(HashingEmbedder(), artifacts=artifacts)
 
 
+def _traced(node: Callable[[GraphState], dict], name: str, tracer: Tracer):
+    """Wrap a node so each invocation opens a span. No-op tracer makes this free."""
+
+    def wrapped(state: GraphState) -> dict:
+        with tracer.span(f"node:{name}"):
+            return node(state)
+
+    return wrapped
+
+
 def build_graph(
     writer: ReportWriter = compose,
     make_retriever: RetrieverFactory = default_make_retriever,
     k: int = 5,
+    tracer: Tracer | None = None,
 ) -> CompiledStateGraph:
-    """Compile the linear three-node graph with the writer/retriever injected."""
+    """Compile the linear three-node graph with the writer/retriever injected.
+
+    Each node is wrapped in a span; the default no-op tracer keeps CI offline and free.
+    """
+    tracer = tracer or NoOpTracer()
     g = StateGraph(GraphState)
-    g.add_node("retrieval", partial(retrieval_node, make_retriever=make_retriever, k=k))
-    g.add_node("risk", risk_node)
-    g.add_node("report_writer", partial(report_writer_node, writer=writer))
+    g.add_node(
+        "retrieval",
+        _traced(partial(retrieval_node, make_retriever=make_retriever, k=k), "retrieval", tracer),
+    )
+    g.add_node("risk", _traced(risk_node, "risk", tracer))
+    g.add_node(
+        "report_writer",
+        _traced(partial(report_writer_node, writer=writer), "report_writer", tracer),
+    )
     g.add_edge(START, "retrieval")
     g.add_edge("retrieval", "risk")
     g.add_edge("risk", "report_writer")
@@ -58,16 +80,22 @@ def run(
     writer: ReportWriter = compose,
     make_retriever: RetrieverFactory = default_make_retriever,
     k: int = 5,
+    tracer: Tracer | None = None,
 ) -> GraphState:
     """Invoke the graph for one {team, [audience], artifacts} input -> final state."""
-    graph = build_graph(writer=writer, make_retriever=make_retriever, k=k)
+    tracer = tracer or get_tracer()
+    graph = build_graph(writer=writer, make_retriever=make_retriever, k=k, tracer=tracer)
     # nodes fill retrieved/verdict/report; GraphState is total=False so a partial init is valid.
     init: GraphState = {
         "team": inputs["team"],
         "audience": inputs.get("audience", DEFAULT_AUDIENCE),
         "artifacts": inputs["artifacts"],
     }
-    return graph.invoke(init)
+    try:
+        with tracer.span("graph:run"):
+            return graph.invoke(init)
+    finally:
+        tracer.flush()
 
 
 def graph_detector(

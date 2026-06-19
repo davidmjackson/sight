@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-18 (Claude Code session: STAGE 3 — LangGraph three-node graph — DONE, branch stage3-langgraph-graph. `sprintsight/graph/` wired up: `GraphState` + three node functions (retrieval, risk, report_writer) + `build_graph`/`run` + graph-level adapters (`graph_detector`, `graph_writer`). Both evals now run THROUGH the graph and gate CI (watermelon 4/4 classification + 4/4 evidence; report-quality 4/4). `langgraph` added as a core dependency. Retrieval node does real CI-safe retrieval (InMemoryRetriever + HashingEmbedder) — chunks parked in state, not yet consumed downstream. `detector.py`/`report/`/`retrieval/` unmodified. Default path stays offline; CI never calls the API. Jira Story SS-29 (Epic SS-4). Prior: STAGE 2 arc 2 — DONE and merged to main (374bf6c); LLM-backed report-writer. STAGE 0 + STAGE 1 BOTH CLOSED. Repo on github.com/davidmjackson/sight; CI green. System of record: Jira (statuses) + the docs below (specs/decisions).
+Last updated: 2026-06-19 (Claude Code session: STAGE 4 (Observability + Evals, Epic SS-7, Story SS-30) complete on branch `stage4-observability-llm-judge`. LLM-as-judge readability scorer added (`sprintsight/evals/judge.py`): four prose dimensions (clarity, audience_fit, coherence, actionability), injected grader (fake in CI, real Anthropic on the key-gated path), advisory pass bar (every dim >= 3, mean >= 4, non-gating). Calibration meta-eval added (`sprintsight/evals/calibration.py`): grades the judge against hand-labelled good/bad anchor reports before it becomes a gate. Per-node graph tracing added to `sprintsight/graph/builder.py` via optional Tracer (no-op default, CI stays offline; one `graph:run` span wraps the run, each node emits a `node:<name>` span). ADR-0003 records the tracing design. Opt-in `--judge` flag on `scripts/run_report_eval.py` runs the readability pass (advisory, never changes exit code). `scripts/run_calibration.py` runs the live calibration. Both new modules green in CI with fakes; live paths key-gated. Deterministic watermelon + report evals unchanged, still the CI gate. Prior: STAGE 3 DONE (SS-29, branch stage3-langgraph-graph); STAGE 2 DONE (arc 2, 374bf6c); STAGE 0 + STAGE 1 CLOSED. Repo on github.com/davidmjackson/sight; CI green. System of record: Jira (statuses) + the docs below (specs/decisions).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -37,6 +37,23 @@ migrations, SS-24 ingestion, SS-23 retrieval, SS-22 baseline detector. Watermelo
 (4/4 classification, 4/4 evidence). Code: sprintsight/{evals,ingest,retrieval,detector.py},
 db/migrations/, data/ corpus. CI: lint-and-test (ruff + pytest + report eval) and `db` job
 (migrate + ingest + retrieve on pgvector:pg16) — both green on push.
+
+Stage 4 (Observability + Evals, Epic SS-7): DONE on branch `stage4-observability-llm-judge`. Jira Story SS-30.
+- LLM-as-judge readability scorer: `sprintsight/evals/judge.py`. Scores a finished report 1-to-5
+  on four prose dimensions (clarity, audience_fit, coherence, actionability) via an injected grader.
+  Pass bar: every dimension >= 3 AND mean >= 4. Advisory only. Does not block the build. Fake grader
+  in CI; real Anthropic grader on the key-gated path.
+- Calibration meta-eval: `sprintsight/evals/calibration.py`. Runs the judge against hand-labelled
+  good/bad anchor reports (`run_calibration`) to prove the judge separates good from bad before it
+  is trusted as a gate. Both modules green in CI with fakes; live paths key-gated.
+- Per-node graph tracing: `sprintsight/graph/builder.py` now emits one `graph:run` span wrapping
+  each run, and one `node:<name>` span per node, via the existing optional Tracer. No-op default
+  keeps CI fully offline. Design recorded in `docs/adr/ADR-0003-graph-tracing.md`.
+- Opt-in `--judge` flag on `scripts/run_report_eval.py` appends an advisory readability pass
+  (never changes exit code). `scripts/run_calibration.py` is the live calibration runner.
+- Deferred: promoting the readability judge to a hard CI gate (pending calibration proving it
+  separates good from bad); Langfuse dashboards; consuming retrieved chunks downstream in the
+  graph (pre-existing deferred item from Stage 3).
 
 Stage 3 (LangGraph, Epic SS-4) — DONE. Jira Story SS-29.
 - Three-node LangGraph graph built in `sprintsight/graph/`: `GraphState` dataclass; node functions
@@ -130,6 +147,7 @@ Full map: docs/jira/epic-key-map.md (generate/refresh from Jira if missing).
 - docs/schema/schema-design.md — SS-1.9 (SIGNED OFF; decisions locked).
 - docs/adr/ADR-0001-three-agent-graph.md — SS-1.6 (three-node cut).
 - docs/adr/ADR-0002-auth-and-residency.md — SS-1.8 (managed Supabase UK/EU).
+- docs/adr/ADR-0003-graph-tracing.md — SS-30 (per-node graph tracing, optional Tracer).
 - sprintsight-braindump.md — project context (in Project knowledge).
 
 ## Stage 1 build log (Epic SS-2 — all DONE)

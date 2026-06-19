@@ -30,8 +30,31 @@ def _select_writer() -> object:
     return graph_writer(compose)
 
 
+def _run_judge_pass(writer) -> None:
+    """Advisory LLM-judge readability pass. Key-gated; never changes the exit code."""
+    key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not key.startswith("sk-ant-") or len(key) < 50:
+        print("\n[--judge] skipped: no real ANTHROPIC_API_KEY (advisory, CI-safe).")
+        return
+    from sprintsight.evals.judge import make_judge
+    from sprintsight.evals.report import build_cases
+
+    judge = make_judge()
+    print("\nReadability (advisory, LLM-judge):")
+    for case in build_cases():
+        report = writer(case.inputs)
+        if report is None or report.insufficient_evidence:
+            print(f"  {case.name:16} n/a (insufficient evidence)")
+            continue
+        score = judge(report, case.inputs.get("audience", "programme"))
+        flag = "PASS" if score.passes else "below-bar"
+        dims = ", ".join(f"{d}={score.scores[d]}" for d in score.scores)
+        print(f"  {case.name:16} {flag}  mean={score.mean:.1f}  [{dims}]")
+
+
 def main() -> int:
-    report = run_report_eval(_select_writer())
+    writer = _select_writer()
+    report = run_report_eval(writer)
     print(json.dumps(report.summary(), indent=2))
     print("\nPer-case:")
     for r in report.results:
@@ -40,6 +63,11 @@ def main() -> int:
         print(f"  {r.name:16} {verdict}  [{checks}]")
         if r.error:
             print(f"                   error: {r.error}")
+    if "--judge" in sys.argv:
+        try:
+            _run_judge_pass(writer)
+        except Exception as exc:  # noqa: BLE001 - advisory pass must never change the exit code
+            print(f"\n[--judge] error (advisory, ignored): {exc}")
     return 0 if report.pass_rate == 1.0 else 1
 
 
