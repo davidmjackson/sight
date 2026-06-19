@@ -71,3 +71,32 @@ def test_live_llm_writer_greens_the_suite():
     from sprintsight.evals.report import run_report_eval
     report = run_report_eval(make_llm_writer())
     assert report.pass_rate == 1.0, report.summary()
+
+
+def test_system_prompt_carries_the_readability_directives():
+    from sprintsight.report.llm_writer import _SYSTEM
+
+    s = _SYSTEM.lower()
+    assert "the one to watch" in s  # lead-with-first-item framing
+    assert "watch-point" in s  # grounded watch-point directive
+    # the banned-passive marker (in directive + exemplar)
+    assert "alignment will be maintained" in s
+    assert "trajectory and decision" in s  # programme register directive
+    # Bright line: never instruct a severity ranking.
+    for banned in ("highest", "most severe", "biggest"):
+        assert banned in s, f"directive must explicitly forbid '{banned}'"
+
+
+def test_user_prompt_names_the_lead_item():
+    from sprintsight.report.audience import PROFILES
+    from sprintsight.report.llm_writer import _user_prompt
+    from sprintsight.report.writer import Facts
+
+    f = Facts(
+        team="Boreas", audience="exec", profile=PROFILES["exec"],
+        burndown_id="b", status_id="s", raid_id="r", metrics=None,
+        rag="green", rag_cite="s",
+        risks=["First risk.", "Second risk."], deps=[], looking_ahead="",
+        claims=[], insufficient=False,
+    )
+    assert "first risk listed is your lead item" in _user_prompt(f).lower()

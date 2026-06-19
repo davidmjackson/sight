@@ -27,7 +27,22 @@ Completer = Callable[[str, str, dict[str, Any]], dict[str, str]]
 _SYSTEM = (
     "You write concise, audience-tuned delivery status prose. You are given already-"
     "verified facts. Write only from those facts. Never invent numbers, dates, or ticket "
-    "ids. Return one short paragraph per requested section."
+    "ids. Return one short paragraph per requested section.\n"
+    "Lead with the one to watch: the risks and dependencies you are given are already in "
+    "priority order, so treat the first one as the item to watch. Do not claim a severity "
+    "ranking and do not use the words 'highest', 'most severe', or 'biggest'.\n"
+    "For each risk and dependency, give a concrete watch-point taken from that item's own "
+    "wording: what specifically to monitor, or what a slip would look like and why it "
+    "matters. Never write passive reassurance such as 'the team is aware', 'planning "
+    "accordingly', or 'alignment will be maintained'.\n"
+    "Do not repeat the same point in more than one section.\n"
+    "For an exec audience, give the business outcome and the single thing to watch, not a "
+    "flat list of equal-weight risks. For a programme audience, give trajectory and decision "
+    "triggers; do not quote raw velocity or carried-over point counts in the prose.\n"
+    "Example. Bad (passive, vague): 'The team is aware of the vendor dependency and "
+    "alignment will be maintained.' Good (grounded watch-point): 'Vendor API rate limits "
+    "are untested at peak load. Watch whether the load test clears before the launch gate, "
+    "since a failure would push the integration milestone.'"
 )
 
 
@@ -52,6 +67,7 @@ def _user_prompt(f: Facts) -> str:
     if p.forbid_mechanics:
         lines.append(f"Do NOT mention sprint mechanics: {', '.join(MECHANICS_TERMS)}.")
     lines.append(f"Write these sections: {', '.join(p.required_sections)}.")
+    lines.append("The first risk listed is your lead item to watch.")
     return "\n".join(lines)
 
 
