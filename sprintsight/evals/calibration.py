@@ -18,9 +18,20 @@ _GOOD_EXEC = Report(
     team="Boreas",
     audience="exec",
     sections={
-        "overall RAG": "Green. Sprint 15 delivered on plan and the release date holds.",
-        "top 3 risks": "One vendor dependency is slipping. Two minor risks are contained.",
-        "ask/decision needed": "Approve one extra reviewer for two weeks to protect the date.",
+        "overall RAG": (
+            "Green. Sprint 15 closed on plan and the 30 June release date is firm, with "
+            "delivery confidence high and trending up."
+        ),
+        "top 3 risks": (
+            "The one risk worth your attention is a vendor API change that could slip "
+            "integration by a week. A workaround is in flight, with a fallback ready if it "
+            "lands late. Two smaller risks, test-environment capacity and a pending design "
+            "sign-off, are already contained."
+        ),
+        "ask/decision needed": (
+            "One decision needed: approve a second reviewer for two weeks. That single step "
+            "removes the only credible threat to the release date, with no impact on other teams."
+        ),
     },
 )
 
