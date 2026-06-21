@@ -50,6 +50,29 @@ def test_score_one_returns_median_and_runs():
     assert len(runs) == 3
 
 
+def test_score_one_drops_failed_samples_and_keeps_survivors():
+    # The one branch the other two _score_one tests miss: k of n samples fail. The median must
+    # be taken over only the survivors, and `runs` must contain only those survivors.
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+    state = {"i": 0}
+
+    def grade(system, user, schema):
+        i = state["i"]
+        state["i"] += 1
+        if i == 1:  # second of three calls fails; it must be dropped, not fatal
+            raise RuntimeError("api blip")
+        return {d: {"score": 4, "reason": "x"} for d in DIMENSIONS}
+
+    median, runs = mod._score_one(make_judge(grade=grade), report, "exec", n=3)
+    assert median is not None
+    assert len(runs) == 2
+    assert median.scores == {d: 4 for d in DIMENSIONS}
+
+
 def test_score_one_returns_none_when_all_samples_fail():
     from sprintsight.report.contract import Report
 

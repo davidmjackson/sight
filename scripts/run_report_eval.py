@@ -101,6 +101,9 @@ def _run_judge_gate(writer, n: int = 5, judge=None, run_calib=None) -> bool:
 
     judge = judge or make_judge()
     run_calib = run_calib or run_calibration
+    # Calibration is single-sample by design: the anchors are deliberately extreme, so one run
+    # separates them, and a wobble here fails safe (a calibration miss yields calibration_ok=False,
+    # which never blocks). Only the report scoring needs the n-sample median.
     calibration_ok = run_calib(judge).pass_rate == 1.0
 
     medians: list[tuple[str, object]] = []

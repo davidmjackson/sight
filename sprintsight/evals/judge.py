@@ -75,7 +75,7 @@ class GateDecision:
 
 
 def judge_gate_decision(
-    medians: list[tuple[str, "JudgeScore | None"]],
+    medians: list[tuple[str, JudgeScore | None]],
     calibration_ok: bool,
 ) -> GateDecision:
     """Decide whether the readability judge should fail the run.
