@@ -1,7 +1,7 @@
 # Sprintsight — HANDOVER
 
 Living cross-session handover. Read this first when starting a new thread or agent.
-Last updated: 2026-06-19 (Claude Code session: STAGE 4 (Observability + Evals, Epic SS-7, Story SS-30) complete on branch `stage4-observability-llm-judge`. LLM-as-judge readability scorer added (`sprintsight/evals/judge.py`): four prose dimensions (clarity, audience_fit, coherence, actionability), injected grader (fake in CI, real Anthropic on the key-gated path), advisory pass bar (every dim >= 3, mean >= 4, non-gating). Calibration meta-eval added (`sprintsight/evals/calibration.py`): grades the judge against hand-labelled good/bad anchor reports before it becomes a gate. Per-node graph tracing added to `sprintsight/graph/builder.py` via optional Tracer (no-op default, CI stays offline; one `graph:run` span wraps the run, each node emits a `node:<name>` span). ADR-0003 records the tracing design. Opt-in `--judge` flag on `scripts/run_report_eval.py` runs the readability pass (advisory, never changes exit code). `scripts/run_calibration.py` runs the live calibration. Both new modules green in CI with fakes; live paths key-gated. Deterministic watermelon + report evals unchanged, still the CI gate. Prior: STAGE 3 DONE (SS-29, branch stage3-langgraph-graph); STAGE 2 DONE (arc 2, 374bf6c); STAGE 0 + STAGE 1 CLOSED. Repo on github.com/davidmjackson/sight; CI green. System of record: Jira (statuses) + the docs below (specs/decisions). FOLLOW-UP THIS SESSION (2026-06-19): writer-readability arc on branch `writer-readability-arc` (see the dedicated section below).
+Last updated: 2026-06-21 (Claude Code session: STAGE 6 first slice (Portfolio + Watermelon UI, Epic SS-6) complete on branch `stage6-watermelon-ui` — see "Where we are" below. Prior: STAGE 4 (Observability + Evals, Epic SS-7, Story SS-30) complete on branch `stage4-observability-llm-judge`. LLM-as-judge readability scorer added (`sprintsight/evals/judge.py`): four prose dimensions (clarity, audience_fit, coherence, actionability), injected grader (fake in CI, real Anthropic on the key-gated path), advisory pass bar (every dim >= 3, mean >= 4, non-gating). Calibration meta-eval added (`sprintsight/evals/calibration.py`): grades the judge against hand-labelled good/bad anchor reports before it becomes a gate. Per-node graph tracing added to `sprintsight/graph/builder.py` via optional Tracer (no-op default, CI stays offline; one `graph:run` span wraps the run, each node emits a `node:<name>` span). ADR-0003 records the tracing design. Opt-in `--judge` flag on `scripts/run_report_eval.py` runs the readability pass (advisory, never changes exit code). `scripts/run_calibration.py` runs the live calibration. Both new modules green in CI with fakes; live paths key-gated. Deterministic watermelon + report evals unchanged, still the CI gate. Prior: STAGE 3 DONE (SS-29, branch stage3-langgraph-graph); STAGE 2 DONE (arc 2, 374bf6c); STAGE 0 + STAGE 1 CLOSED. Repo on github.com/davidmjackson/sight; CI green. System of record: Jira (statuses) + the docs below (specs/decisions). FOLLOW-UP THIS SESSION (2026-06-19): writer-readability arc on branch `writer-readability-arc` (see the dedicated section below).
 
 ## Who reads what
 - This file (HANDOVER.md): shared current state. BOTH the planning thread and Claude Code read it. One state file on purpose; do not fork it.
@@ -21,8 +21,29 @@ Format per item: concept | one line on what is new | code/stage pointer | date f
 - De-noising an LLM judge with a median | a single LLM-judge run wobbles run to run (exec swung 4.2 to 2.75 with no code change), so we sample it 3 times and take the median; a noisy judge cannot be a CI gate yet | sprintsight/evals/judge.py sample_judge + scripts/run_report_eval.py --judge | flagged 2026-06-19
 - When a measurement reveals a bug, not a quality gap | the LLM exec prose was rejected because the mechanics filter matched "points" as a substring (catching its own "watch-points"); the fix was a correct boundary matcher, not prose-tweaking; lesson = read why a score is low before changing the writer | sprintsight/report/audience.py contains_mechanics + llm-writer-readability arc | flagged 2026-06-19
 - An LLM gate that can disqualify itself | the judge gate runs its own calibration meta-eval first; a judge that fails calibration is not trusted to block the build, so a flaky or misconfigured judge cannot turn CI red | scripts/run_report_eval.py `_run_judge_gate` + sprintsight/evals/judge.py `judge_gate_decision` + judge-gate-arc | flagged 2026-06-21
+- An "eval" for a UI tests the served data, not the pixels | Stage 6's first screen stays eval-first by asserting the FastAPI service/JSON output matches the watermelon ground truth (Atlas flagged red, Echo insufficient-evidence), with light HTML smoke tests, instead of screenshot testing | sprintsight/web/service.py + tests/web/ | flagged 2026-06-21
 
 ## Where we are
+Stage 6 (Portfolio + Watermelon UI, Epic SS-6) — FIRST SLICE DONE on branch `stage6-watermelon-ui` (not yet merged).
+- The project's first web UI and first HTTP serving layer. A FastAPI app at `sprintsight/web/`:
+  `service.py` (pure data layer: `portfolio()` + `team_detail()` over the existing `graph_detector()`
+  path, shaping frozen view-models `TeamRow`/`TeamDetail`/`EvidenceItem`); `app.py` (`create_app()`
+  + module-level `app`); Jinja2 templates + `static/app.css`. Two views: a portfolio grid (reported
+  vs computed RAG + watermelon badge) and a per-team drill-in (headline, signals, evidence).
+- Routes: `GET /` and `GET /team/{id}` (HTML), `GET /api/portfolio` and `GET /api/team/{id}` (JSON,
+  the seam for later auth / richer frontend; 404 on unknown team). HTML + JSON render from the same
+  service output so they cannot drift.
+- Run it locally: `.venv/bin/uvicorn sprintsight.web.app:app --port 8000` (then `/` and `/team/atlas`).
+- Eval-first held: tests under `tests/web/` assert the served data vs the Sprint-15 ground truth
+  (Atlas watermelon/red, Boreas/Cygnus/Draco not, Echo insufficient-evidence) + light HTML smoke
+  tests. New optional `web` extra (fastapi/jinja2/httpx/uvicorn); CI `lint-and-test` now installs
+  `.[dev,eval,web]`. Offline, corpus-driven, no key/DB. Also added a backward-compatible `signals`
+  field to `Verdict` (watermelon eval still 4/4). Full suite 118 passed / 3 skipped, ruff clean.
+- OUT OF SCOPE (deferred, by design): login/auth (Stage 5, SS-8), persistent DB, the embedded LLM
+  status report, writes/RAID actions, and visual polish (Stage 7, SS-5). The drill-in is plain page
+  navigation (no JavaScript/HTMX) in this slice.
+- OUTSTANDING: final whole-branch review, then integrate the branch (merge/PR); Jira SS-6 board moves.
+
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
 Stage 2 (Status Report Agent, Epic SS-1) — BOTH ARCS DONE.
 - Arc 1: the SS-1.5 report-quality eval is GREEN (4/4 cases: boreas-exec, atlas-programme,
