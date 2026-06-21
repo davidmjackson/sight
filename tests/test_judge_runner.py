@@ -28,6 +28,49 @@ def test_judge_pass_skips_without_key(monkeypatch, capsys):
     assert "judge" in out.lower() and "skip" in out.lower()
 
 
+def test_score_one_returns_median_and_runs():
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+    # clarity walks [2,4,4] -> median 4; all other dims constant 4.
+    state = {"i": 0}
+
+    def grade(system, user, schema):
+        i = state["i"]; state["i"] += 1
+        clar = [2, 4, 4][i]
+        return {d: {"score": (clar if d == "clarity" else 4), "reason": "x"} for d in DIMENSIONS}
+
+    median, runs = mod._score_one(make_judge(grade=grade), report, "exec", n=3)
+    assert median is not None
+    assert median.scores["clarity"] == 4
+    assert len(runs) == 3
+
+
+def test_score_one_returns_none_when_all_samples_fail():
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+
+    def boom(report, audience):
+        raise RuntimeError("api down")
+
+    median, runs = mod._score_one(boom, report, "exec", n=3)
+    assert median is None
+    assert runs == []
+
+
+def test_judge_pass_skips_without_key(monkeypatch, capsys):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    mod = _load_runner()
+    # The advisory pass must no-op (print a skip notice) and never raise when unkeyed.
+    mod._run_judge_pass(lambda inputs: None)
+    out = capsys.readouterr().out
+    assert "judge" in out.lower() and "skip" in out.lower()
+
+
 def test_judge_exception_does_not_change_exit_code(monkeypatch, capsys):
     """Advisory --judge pass raising must not alter the deterministic exit code.
 
