@@ -1,1 +1,24 @@
-/* Stage 6 styles (filled in Task 5). */
+:root { --green:#1a7f37; --amber:#bf8700; --red:#cf222e; --ink:#1c2024; --line:#e3e6ea; }
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--ink);
+  margin: 0; background: #fafbfc; }
+header { padding: 14px 24px; border-bottom: 1px solid var(--line); background: #fff; }
+.brand { font-weight: 700; text-decoration: none; color: var(--ink); }
+.sub { color: #6b7280; }
+main { max-width: 880px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 1.5rem; }
+.lede, .headline { color: #4b5563; }
+table.portfolio { width: 100%; border-collapse: collapse; background: #fff; }
+table.portfolio th, table.portfolio td { text-align: left; padding: 10px 12px;
+  border-bottom: 1px solid var(--line); }
+tr.watermelon { background: #fff5f5; }
+.rag { padding: 2px 8px; border-radius: 10px; font-size: .85rem; color: #fff; text-transform: capitalize; }
+.rag-green { background: var(--green); } .rag-amber { background: var(--amber); }
+.rag-red { background: var(--red); } .rag-unknown { background: #9aa1a9; }
+.badge { padding: 2px 8px; border-radius: 6px; font-size: .8rem; }
+.badge-watermelon { background: var(--red); color: #fff; }
+.badge-ok { background: #eef2f5; color: #374151; }
+.badge-muted { background: #f1f3f5; color: #6b7280; }
+ul.signals li, ul.evidence li { margin: 6px 0; }
+.snippet { color: #6b7280; font-size: .9rem; margin-top: 2px; }
+code { background: #f1f3f5; padding: 1px 5px; border-radius: 4px; }

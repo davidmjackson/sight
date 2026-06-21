@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     def page_portfolio(request: Request) -> HTMLResponse:
         return _TEMPLATES.TemplateResponse(
-            "portfolio.html", {"request": request, "rows": service.portfolio()}
+            request, "portfolio.html", {"rows": service.portfolio()}
         )
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)
@@ -40,7 +40,7 @@ def create_app() -> FastAPI:
         detail = service.team_detail(team_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
-        return _TEMPLATES.TemplateResponse("team.html", {"request": request, "d": detail})
+        return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail})
 
     return app
 

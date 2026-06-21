@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block main %}
+<h1>Team portfolio</h1>
+<p class="lede">Reported status versus what the data actually shows, as of Sprint 15.</p>
+<table class="portfolio">
+  <thead>
+    <tr><th>Team</th><th>Reported</th><th>Actual</th><th>Flag</th></tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr class="{{ 'watermelon' if row.is_watermelon else '' }}">
+      <td><a href="/team/{{ row.team|lower }}">{{ row.team }}</a></td>
+      <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>
+      <td><span class="rag rag-{{ row.actual_status }}">{{ row.actual_status }}</span></td>
+      <td>
+        {% if not row.has_verdict %}
+          <span class="badge badge-muted">insufficient evidence</span>
+        {% elif row.is_watermelon %}
+          <span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
+        {% else %}
+          <span class="badge badge-ok">consistent</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
