@@ -6,6 +6,7 @@ The detector sits behind this seam so a future DB-backed detector can replace it
 touching the pages. The portfolio judges as-of Sprint 15 with Sprint 14 as context.
 """
 
+import logging
 from dataclasses import dataclass, field
 
 from sprintsight.evals.fixtures import Artifact, artifacts_for
@@ -110,6 +111,7 @@ def _verdict_or_none(team: str) -> Verdict | None:
     try:
         return _detector({"team": team, "artifacts": arts})
     except Exception:
+        logging.exception("detector failed for team %s", team)
         return None
 
 

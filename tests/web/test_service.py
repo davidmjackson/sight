@@ -20,6 +20,7 @@ def test_atlas_is_watermelon_red():
 
 def test_boreas_green_not_watermelon():
     boreas = _row(service.portfolio(), "Boreas")
+    assert boreas.has_verdict is True
     assert boreas.is_watermelon is False
     assert boreas.actual_status == "green"
 
