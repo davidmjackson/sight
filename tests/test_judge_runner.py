@@ -38,7 +38,8 @@ def test_score_one_returns_median_and_runs():
     state = {"i": 0}
 
     def grade(system, user, schema):
-        i = state["i"]; state["i"] += 1
+        i = state["i"]
+        state["i"] += 1
         clar = [2, 4, 4][i]
         return {d: {"score": (clar if d == "clarity" else 4), "reason": "x"} for d in DIMENSIONS}
 
