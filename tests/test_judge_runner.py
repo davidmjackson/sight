@@ -93,7 +93,7 @@ def test_judge_exception_does_not_change_exit_code(monkeypatch, capsys):
 
 
 def _gate_fakes(score_values):
-    """Return (writer, judge, run_calib_factory) wired with a fake grader at score_values."""
+    """Return (writer, judge) wired with a fake grader at score_values."""
     from sprintsight.evals.judge import DIMENSIONS, make_judge
     from sprintsight.report.contract import Report
 
