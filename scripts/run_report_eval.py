@@ -1,13 +1,19 @@
 """Run the report-quality eval (SS-1.5) and print the scoreboard.
 
-    .venv/bin/python scripts/run_report_eval.py           # default: compose (CI path)
-    .venv/bin/python scripts/run_report_eval.py --llm     # live: real Anthropic writer
+    .venv/bin/python scripts/run_report_eval.py                      # default: compose (CI path)
+    .venv/bin/python scripts/run_report_eval.py --llm                # live: real Anthropic writer
+    .venv/bin/python scripts/run_report_eval.py --llm --judge-gate   # live: gate on readability
 
 Pre-composer this reports RED by design. Once `compose` is wired it goes GREEN. Exits
 non-zero unless fully green, so it doubles as the CI eval gate.
 
 --llm requires a real ANTHROPIC_API_KEY (starts with sk-ant-, >=50 chars). If the key
 is absent or invalid the script exits 2 immediately so CI never calls the API.
+
+--judge-gate requires the same key. Runs the LLM-as-judge calibration meta-eval first;
+only a trusted judge can block. Scores each eval report 5 times (median). Fails the run
+if any scored report is below the readability bar. Any infra exception is treated as
+non-blocking so a flaky API call cannot turn CI red.
 """
 
 import json
@@ -82,6 +88,45 @@ def _run_judge_pass(writer, n: int = 3) -> None:
         print(f"  {case.name:16} {flag}  mean={median.mean:.2f}  [{', '.join(cells)}]")
 
 
+def _run_judge_gate(writer, n: int = 5, judge=None, run_calib=None) -> bool:
+    """Blocking readability gate (live, key-holding runs only). Returns True iff it should block.
+
+    Runs the calibration meta-eval first; only a trusted judge is allowed to block. Scores each
+    eval report `n` times and takes the median. `judge`/`run_calib` are injectable for offline
+    tests; they default to the real (key-gated) judge and calibration.
+    """
+    from sprintsight.evals.calibration import run_calibration
+    from sprintsight.evals.judge import judge_gate_decision, make_judge
+    from sprintsight.evals.report import build_cases
+
+    judge = judge or make_judge()
+    run_calib = run_calib or run_calibration
+    calibration_ok = run_calib(judge).pass_rate == 1.0
+
+    medians: list[tuple[str, object]] = []
+    print(f"\nReadability GATE (LLM-judge, median of {n}, calibration_ok={calibration_ok}):")
+    for case in build_cases():
+        report = writer(case.inputs)
+        if report is None or report.insufficient_evidence:
+            medians.append((case.name, None))
+            print(f"  {case.name:16} n/a (insufficient evidence)")
+            continue
+        audience = case.inputs.get("audience", "programme")
+        median, _runs = _score_one(judge, report, audience, n)
+        medians.append((case.name, median))
+        if median is None:
+            print(f"  {case.name:16} n/a (all judge samples failed)")
+        else:
+            flag = "PASS" if median.passes else "below-bar"
+            print(f"  {case.name:16} {flag}  mean={median.mean:.2f}")
+
+    decision = judge_gate_decision(medians, calibration_ok)
+    for line in decision.reasons:
+        print(f"    {line}")
+    print(f"\nJUDGE GATE: {'BLOCKS' if decision.blocks else 'OK'}")
+    return decision.blocks
+
+
 def main() -> int:
     writer = _select_writer()
     report = run_report_eval(writer)
@@ -98,7 +143,20 @@ def main() -> int:
             _run_judge_pass(writer)
         except Exception as exc:  # noqa: BLE001 - advisory pass must never change the exit code
             print(f"\n[--judge] error (advisory, ignored): {exc}")
-    return 0 if report.pass_rate == 1.0 else 1
+
+    gate_blocks = False
+    if "--judge-gate" in sys.argv:
+        key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not key.startswith("sk-ant-") or len(key) < 50:
+            print("ERROR: --judge-gate needs a real ANTHROPIC_API_KEY in the environment.")
+            return 2
+        try:
+            gate_blocks = _run_judge_gate(writer)
+        except Exception as exc:  # noqa: BLE001 - infra failure must not turn the build red
+            print(f"\n[--judge-gate] error (infra; advisory, not blocking): {exc}")
+            gate_blocks = False
+
+    return 1 if (report.pass_rate != 1.0 or gate_blocks) else 0
 
 
 if __name__ == "__main__":

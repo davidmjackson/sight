@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import types as _types
 from pathlib import Path
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run_report_eval.py"
@@ -89,3 +90,61 @@ def test_judge_exception_does_not_change_exit_code(monkeypatch, capsys):
     # The error notice must appear in stdout so the operator can see what happened.
     out = capsys.readouterr().out
     assert "advisory" in out.lower() or "ignored" in out.lower()
+
+
+def _gate_fakes(score_values):
+    """Return (writer, judge, run_calib_factory) wired with a fake grader at score_values."""
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    def writer(inputs):
+        return Report(team="T", audience="exec", sections={"overall RAG": "Green."})
+
+    def grade(system, user, schema):
+        return {d: {"score": score_values[d], "reason": "x"} for d in DIMENSIONS}
+
+    judge = make_judge(grade=grade)
+    return writer, judge
+
+
+def test_run_judge_gate_blocks_below_bar_when_calibration_ok():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    below = {**{d: 4 for d in DIMENSIONS}, "coherence": 2}
+    writer, judge = _gate_fakes(below)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=1.0)
+    )
+    assert blocks is True
+
+
+def test_run_judge_gate_does_not_block_when_calibration_fails():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    below = {**{d: 4 for d in DIMENSIONS}, "coherence": 2}
+    writer, judge = _gate_fakes(below)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=0.5)
+    )
+    assert blocks is False
+
+
+def test_run_judge_gate_allows_passing_reports():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    good = {d: 4 for d in DIMENSIONS}
+    writer, judge = _gate_fakes(good)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=1.0)
+    )
+    assert blocks is False
+
+
+def test_main_judge_gate_requires_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["run_report_eval.py", "--judge-gate"])
+    mod = _load_runner()
+    assert mod.main() == 2
