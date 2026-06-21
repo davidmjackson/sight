@@ -66,6 +66,51 @@ class JudgeScore:
         return all(v >= MIN_PER_DIMENSION for v in self.scores.values()) and self.mean >= MIN_MEAN
 
 
+@dataclass(frozen=True)
+class GateDecision:
+    """Verdict from the readability gate: whether to block, plus human-readable reasons."""
+
+    blocks: bool
+    reasons: list[str]
+
+
+def judge_gate_decision(
+    medians: list[tuple[str, JudgeScore | None]],
+    calibration_ok: bool,
+) -> GateDecision:
+    """Decide whether the readability judge should fail the run.
+
+    Two absolute safety rules: a judge that failed its calibration does not block, and a
+    report that could not be scored (None) does not block. Otherwise the gate blocks on any
+    scored report whose median is below the readability bar.
+    """
+    reasons: list[str] = []
+    if not calibration_ok:
+        reasons.append(
+            "calibration failed: judge not trusted this run, advisory only (not blocking)."
+        )
+        return GateDecision(blocks=False, reasons=reasons)
+
+    below: list[str] = []
+    for name, score in medians:
+        if score is None:
+            msg = f"{name}: not scored (insufficient evidence or all samples failed); not blocking."
+            reasons.append(msg)
+            continue
+        if score.passes:
+            reasons.append(f"{name}: passes (mean={score.mean:.2f}).")
+        else:
+            below.append(name)
+            msg = f"{name}: below bar (scores={score.scores}, mean={score.mean:.2f})."
+            reasons.append(msg)
+
+    if below:
+        reasons.append(f"GATE BLOCKS: {', '.join(below)} below the readability bar.")
+        return GateDecision(blocks=True, reasons=reasons)
+    reasons.append("GATE OK: all scored reports clear the readability bar.")
+    return GateDecision(blocks=False, reasons=reasons)
+
+
 def _user_prompt(report: Report, audience: str) -> str:
     body = render_report_markdown(report)
     return f"Audience: {audience}.\nReport for team {report.team}:\n\n{body}"

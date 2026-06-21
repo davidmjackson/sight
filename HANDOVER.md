@@ -20,6 +20,7 @@ Format per item: concept | one line on what is new | code/stage pointer | date f
 - Correcting a quality bar that demands fabrication | when the readability judge wanted owners/dates/decisions our no-fabrication rule forbids inventing, we corrected the rubric (not the facts, not the bar), guarded by the calibration meta-eval | sprintsight/evals/judge.py (actionability) + scripts/run_calibration.py + writer-readability arc | flagged 2026-06-19
 - De-noising an LLM judge with a median | a single LLM-judge run wobbles run to run (exec swung 4.2 to 2.75 with no code change), so we sample it 3 times and take the median; a noisy judge cannot be a CI gate yet | sprintsight/evals/judge.py sample_judge + scripts/run_report_eval.py --judge | flagged 2026-06-19
 - When a measurement reveals a bug, not a quality gap | the LLM exec prose was rejected because the mechanics filter matched "points" as a substring (catching its own "watch-points"); the fix was a correct boundary matcher, not prose-tweaking; lesson = read why a score is low before changing the writer | sprintsight/report/audience.py contains_mechanics + llm-writer-readability arc | flagged 2026-06-19
+- An LLM gate that can disqualify itself | the judge gate runs its own calibration meta-eval first; a judge that fails calibration is not trusted to block the build, so a flaky or misconfigured judge cannot turn CI red | scripts/run_report_eval.py `_run_judge_gate` + sprintsight/evals/judge.py `judge_gate_decision` + judge-gate-arc | flagged 2026-06-21
 
 ## Where we are
 Stage 0 (Foundation, Epic SS-3) and Stage 1 (Ingestion + RAG Core, Epic SS-2) are BOTH COMPLETE.
@@ -99,6 +100,26 @@ Stage 4 follow-up: writer-readability arc (Epic SS-7), on branch `writer-readabi
   Docs: docs/superpowers/{specs,plans}/2026-06-19-llm-writer-readability*.
 - WATCH (for any future judge gate promotion): atlas-programme `coherence` median sits at 3 (the
   per-dimension floor), so a noisy run could dip it below bar. Promotion still deferred.
+
+Stage 4 follow-up: judge-gate arc (Epic SS-7), on branch `judge-gate-arc`, MERGED to main (live-verified).
+- What: the LLM-judge readability pass can now FAIL a deliberate, key-holding pre-merge run via a new
+  `--judge-gate` flag on `scripts/run_report_eval.py`. This is the live-only gate David chose ("Option
+  A"); CI is untouched and stays offline (the deterministic report eval is still the only CI gate).
+- Design: `judge_gate_decision(medians, calibration_ok) -> GateDecision` (pure, in judge.py) owns the
+  block/allow rules. Two safety catches: (1) the gate runs the calibration meta-eval first and only
+  blocks if the judge is trusted that run; (2) it scores each report as a 5-sample median (advisory
+  `--judge` stays 3). Fails SAFE everywhere: missing key returns 2, an infra exception or a
+  calibration miss yields not-blocking, and an unscored (insufficient-evidence) report never blocks.
+  Shared `_score_one` helper de-dupes the per-case median for advisory + gate. Exit code is non-zero
+  iff the deterministic eval fails OR the gate blocks.
+- Built eval-first via SDD (3 implementer+reviewer tasks, opus whole-branch review = ready to merge,
+  no Critical/Important). Suite 101 passed/3 skipped, ruff clean. Spec/plan:
+  docs/superpowers/{specs,plans}/2026-06-21-judge-gate*. Ledger .superpowers/sdd/progress.md.
+- LIVE VERIFIED 2026-06-21 (`--llm --judge-gate`, real key): deterministic 4/4; calibration_ok=True;
+  GATE OK with boreas-exec mean 4.50 PASS and atlas-programme mean 4.50 PASS (echo-thin n/a, not
+  blocking); exit 0. The blocking path (below-bar -> blocks) is proven by the offline tests; the live
+  run proves the happy path, the live calibration trust gate, and the exit-code wiring.
+- Judge stays ADVISORY in CI (not promoted to a CI gate). `--judge-gate` is operator-run only.
 
 Stage 3 (LangGraph, Epic SS-4) — DONE. Jira Story SS-29.
 - Three-node LangGraph graph built in `sprintsight/graph/`: `GraphState` dataclass; node functions

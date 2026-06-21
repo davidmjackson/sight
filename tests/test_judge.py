@@ -3,7 +3,14 @@ import os
 
 import pytest
 
-from sprintsight.evals.judge import DIMENSIONS, _anthropic_grader, make_judge, sample_judge
+from sprintsight.evals.judge import (
+    DIMENSIONS,
+    GateDecision,
+    _anthropic_grader,
+    judge_gate_decision,
+    make_judge,
+    sample_judge,
+)
 from sprintsight.report.contract import Report
 
 
@@ -144,3 +151,48 @@ def test_sample_judge_raises_when_all_samples_fail():
 
     with _pytest.raises(RuntimeError):
         sample_judge(make_judge(grade=always_fails), _report(), "exec", n=3)
+
+
+def _score(values: dict[str, int]):
+    """Build a real JudgeScore via the fake grader so .passes uses the real bar."""
+    def grade(system, user, schema):
+        return {d: {"score": values[d], "reason": "x"} for d in values}
+
+    return make_judge(grade=grade)(_report(), "exec")
+
+
+def test_gate_allows_when_all_pass_and_calibration_ok():
+    good = _score({d: 4 for d in DIMENSIONS})  # mean 4.0, every dim >= 3 -> passes
+    decision = judge_gate_decision([("boreas-exec", good)], calibration_ok=True)
+    assert isinstance(decision, GateDecision)
+    assert decision.blocks is False
+
+
+def test_gate_blocks_when_a_report_is_below_bar_and_calibration_ok():
+    bad = _score({**{d: 4 for d in DIMENSIONS}, "coherence": 2})  # one dim < 3 -> fails bar
+    decision = judge_gate_decision([("atlas-programme", bad)], calibration_ok=True)
+    assert decision.blocks is True
+    assert any("atlas-programme" in r for r in decision.reasons)
+
+
+def test_gate_does_not_block_when_calibration_fails_even_if_below_bar():
+    bad = _score({**{d: 4 for d in DIMENSIONS}, "coherence": 2})
+    decision = judge_gate_decision([("atlas-programme", bad)], calibration_ok=False)
+    assert decision.blocks is False
+    assert any("calibration" in r.lower() for r in decision.reasons)
+
+
+def test_gate_does_not_block_on_unscored_report():
+    good = _score({d: 4 for d in DIMENSIONS})
+    decision = judge_gate_decision(
+        [("echo-thin", None), ("boreas-exec", good)], calibration_ok=True
+    )
+    assert decision.blocks is False
+
+
+def test_gate_still_blocks_on_real_failure_alongside_an_unscored_report():
+    bad = _score({**{d: 4 for d in DIMENSIONS}, "coherence": 2})
+    decision = judge_gate_decision(
+        [("echo-thin", None), ("atlas-programme", bad)], calibration_ok=True
+    )
+    assert decision.blocks is True

@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import types as _types
 from pathlib import Path
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run_report_eval.py"
@@ -28,6 +29,64 @@ def test_judge_pass_skips_without_key(monkeypatch, capsys):
     assert "judge" in out.lower() and "skip" in out.lower()
 
 
+def test_score_one_returns_median_and_runs():
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+    # clarity walks [2,4,4] -> median 4; all other dims constant 4.
+    state = {"i": 0}
+
+    def grade(system, user, schema):
+        i = state["i"]
+        state["i"] += 1
+        clar = [2, 4, 4][i]
+        return {d: {"score": (clar if d == "clarity" else 4), "reason": "x"} for d in DIMENSIONS}
+
+    median, runs = mod._score_one(make_judge(grade=grade), report, "exec", n=3)
+    assert median is not None
+    assert median.scores["clarity"] == 4
+    assert len(runs) == 3
+
+
+def test_score_one_drops_failed_samples_and_keeps_survivors():
+    # The one branch the other two _score_one tests miss: k of n samples fail. The median must
+    # be taken over only the survivors, and `runs` must contain only those survivors.
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+    state = {"i": 0}
+
+    def grade(system, user, schema):
+        i = state["i"]
+        state["i"] += 1
+        if i == 1:  # second of three calls fails; it must be dropped, not fatal
+            raise RuntimeError("api blip")
+        return {d: {"score": 4, "reason": "x"} for d in DIMENSIONS}
+
+    median, runs = mod._score_one(make_judge(grade=grade), report, "exec", n=3)
+    assert median is not None
+    assert len(runs) == 2
+    assert median.scores == {d: 4 for d in DIMENSIONS}
+
+
+def test_score_one_returns_none_when_all_samples_fail():
+    from sprintsight.report.contract import Report
+
+    mod = _load_runner()
+    report = Report(team="Boreas", audience="exec", sections={"overall RAG": "Green."})
+
+    def boom(report, audience):
+        raise RuntimeError("api down")
+
+    median, runs = mod._score_one(boom, report, "exec", n=3)
+    assert median is None
+    assert runs == []
+
+
 def test_judge_exception_does_not_change_exit_code(monkeypatch, capsys):
     """Advisory --judge pass raising must not alter the deterministic exit code.
 
@@ -54,3 +113,61 @@ def test_judge_exception_does_not_change_exit_code(monkeypatch, capsys):
     # The error notice must appear in stdout so the operator can see what happened.
     out = capsys.readouterr().out
     assert "advisory" in out.lower() or "ignored" in out.lower()
+
+
+def _gate_fakes(score_values):
+    """Return (writer, judge) wired with a fake grader at score_values."""
+    from sprintsight.evals.judge import DIMENSIONS, make_judge
+    from sprintsight.report.contract import Report
+
+    def writer(inputs):
+        return Report(team="T", audience="exec", sections={"overall RAG": "Green."})
+
+    def grade(system, user, schema):
+        return {d: {"score": score_values[d], "reason": "x"} for d in DIMENSIONS}
+
+    judge = make_judge(grade=grade)
+    return writer, judge
+
+
+def test_run_judge_gate_blocks_below_bar_when_calibration_ok():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    below = {**{d: 4 for d in DIMENSIONS}, "coherence": 2}
+    writer, judge = _gate_fakes(below)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=1.0)
+    )
+    assert blocks is True
+
+
+def test_run_judge_gate_does_not_block_when_calibration_fails():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    below = {**{d: 4 for d in DIMENSIONS}, "coherence": 2}
+    writer, judge = _gate_fakes(below)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=0.5)
+    )
+    assert blocks is False
+
+
+def test_run_judge_gate_allows_passing_reports():
+    from sprintsight.evals.judge import DIMENSIONS
+
+    mod = _load_runner()
+    good = {d: 4 for d in DIMENSIONS}
+    writer, judge = _gate_fakes(good)
+    blocks = mod._run_judge_gate(
+        writer, n=3, judge=judge, run_calib=lambda j: _types.SimpleNamespace(pass_rate=1.0)
+    )
+    assert blocks is False
+
+
+def test_main_judge_gate_requires_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["run_report_eval.py", "--judge-gate"])
+    mod = _load_runner()
+    assert mod.main() == 2
