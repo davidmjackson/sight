@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ d.team }}{% endblock %}
+{% block main %}
+<p><a href="/">&larr; Back to portfolio</a></p>
+<h1>
+  {{ d.team }}
+  {% if d.has_verdict and d.is_watermelon %}
+    <span class="badge badge-watermelon">watermelon</span>
+  {% endif %}
+</h1>
+<p class="headline">{{ d.headline }}</p>
+
+{% if d.has_verdict %}
+<p>
+  Reported <span class="rag rag-{{ d.reported_status }}">{{ d.reported_status }}</span>,
+  computed actual <span class="rag rag-{{ d.actual_status }}">{{ d.actual_status }}</span>.
+</p>
+
+<h2>Why</h2>
+<p class="explanation">{{ d.explanation }}</p>
+
+<h2>Signals</h2>
+<ul class="signals">
+  {% for s in d.signals %}<li>{{ s }}</li>{% endfor %}
+</ul>
+
+<h2>Evidence</h2>
+<ul class="evidence">
+  {% for e in d.evidence %}
+    <li>
+      <strong>{{ e.title }}</strong>
+      <code>{{ e.artifact_id }}</code>
+      {% if e.snippet %}<div class="snippet">{{ e.snippet }}</div>{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="explanation">{{ d.explanation }}</p>
+{% endif %}
+{% endblock %}

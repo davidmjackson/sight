@@ -35,6 +35,7 @@ class Verdict:
     actual_status: str
     is_watermelon: bool
     evidence: list[str] = field(default_factory=list)
+    signals: list[str] = field(default_factory=list)
     explanation: str = ""
 
 

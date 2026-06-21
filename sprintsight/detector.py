@@ -172,5 +172,6 @@ def detect(inputs: dict[str, Any]) -> Verdict:
         actual_status=actual,
         is_watermelon=is_watermelon,
         evidence=evidence,
+        signals=signals,
         explanation=explanation,
     )
