@@ -37,9 +37,10 @@ Offline and CI stay green and deterministic with zero config. This mirrors the a
 fail-safe gating (`SPRINTSIGHT_ENV` precedent).
 
 "Key present" is defined concretely: `ANTHROPIC_API_KEY` is set, starts with `sk-ant-`, and is
-longer than 50 characters. This reuses the same key shape already used by the live skip-guard in
-`tests/test_llm_writer.py`, so the web gate and the existing live tests agree on what a real key
-looks like. A blank or obviously-fake key does not open the gate.
+longer than 50 characters. The `sk-ant-` prefix matches the live skip-guard in
+`tests/test_llm_writer.py`; the web gate additionally requires length over 50, so it is a
+slightly stricter shape check than the skip-guard. A blank or obviously-fake key does not open
+the gate.
 
 ### 2. How the writer is chosen
 A small resolver in `sprintsight/web/service.py` returns `make_llm_writer()` when the gate is

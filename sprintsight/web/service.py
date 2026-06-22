@@ -1,9 +1,11 @@
 """Stage 6 web data layer (SS-6).
 
 Reads the synthetic corpus through the existing detector path and shapes view-models for
-the portfolio grid and the per-team drill-in. Pure Python: no HTTP, no LLM, no database.
-The detector sits behind this seam so a future DB-backed detector can replace it without
-touching the pages. The portfolio judges as-of Sprint 15 with Sprint 14 as context.
+the portfolio grid and the per-team drill-in. No HTTP server and no database; the report
+writer is offline `compose` by default, with an optional call-time-gated LLM writer (off
+unless SPRINTSIGHT_WEB_LLM=on and a real key are present). The detector sits behind this
+seam so a future DB-backed detector can replace it without touching the pages. The
+portfolio judges as-of Sprint 15 with Sprint 14 as context.
 """
 
 import logging
