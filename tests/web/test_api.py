@@ -20,3 +20,30 @@ def test_api_team_atlas_detail(client):
 
 def test_api_team_unknown_404(client):
     assert client.get("/api/team/nope").status_code == 404
+
+
+def test_api_team_audience_param_selects_exec(client):
+    body = client.get("/api/team/atlas?audience=exec").json()
+    assert body["audience"] == "exec"
+    headings = {s["heading"] for s in body["report_sections"]}
+    assert "Recommended next step" in headings
+    assert "Sprint metrics" not in headings
+
+
+def test_api_team_default_audience_is_programme(client):
+    body = client.get("/api/team/atlas").json()
+    assert body["audience"] == "programme"
+    headings = {s["heading"] for s in body["report_sections"]}
+    assert "Risks" in headings
+    assert {src["artifact_id"] for src in body["report_sources"]}
+
+
+def test_api_team_unknown_audience_falls_back(client):
+    body = client.get("/api/team/atlas?audience=bogus").json()
+    assert body["audience"] == "programme"
+
+
+def test_api_echo_report_insufficient(client):
+    body = client.get("/api/team/echo").json()
+    assert body["report_insufficient"] is True
+    assert body["report_sections"] == []

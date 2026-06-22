@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from sprintsight.evals.fixtures import Artifact, artifacts_for
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.builder import graph_detector
+from sprintsight.report.audience import PROFILES
+from sprintsight.report.render import heading_for
+from sprintsight.report.writer import ReportWriter, compose
 
 TEAMS: list[str] = ["Atlas", "Boreas", "Cygnus", "Draco", "Echo"]
 _SPRINTS = [14, 15]
@@ -28,6 +31,22 @@ _SOURCE_LABELS = {
 }
 
 _detector = graph_detector()
+
+DEFAULT_AUDIENCE = "programme"
+VALID_AUDIENCES = ("exec", "programme", "team")
+
+_writer: ReportWriter = compose  # seam; LLM writer can be injected here later
+
+
+def normalize_audience(value: str) -> str:
+    """Coerce any audience value to a valid one; unknown falls back to the default."""
+    return value if value in VALID_AUDIENCES else DEFAULT_AUDIENCE
+
+
+@dataclass(frozen=True)
+class ReportSection:
+    heading: str
+    body: str
 
 
 @dataclass(frozen=True)
@@ -60,6 +79,10 @@ class TeamDetail:
     signals: list[str] = field(default_factory=list)
     explanation: str = ""
     evidence: list[EvidenceItem] = field(default_factory=list)
+    audience: str = DEFAULT_AUDIENCE
+    report_sections: list[ReportSection] = field(default_factory=list)
+    report_sources: list[EvidenceItem] = field(default_factory=list)
+    report_insufficient: bool = False
 
 
 def portfolio() -> list[TeamRow]:
@@ -82,14 +105,16 @@ def portfolio() -> list[TeamRow]:
     return rows
 
 
-def team_detail(team_id: str) -> TeamDetail | None:
+def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | None:
     team = _resolve_team(team_id)
     if team is None:
         return None
+    audience = normalize_audience(audience)
     verdict = _verdict_or_none(team)
     if verdict is None:
-        return _insufficient_detail(team)
+        return _insufficient_detail(team, audience)
     arts = artifacts_for(team, _SPRINTS)
+    sections, sources, insufficient = _report_for(team, audience, arts)
     return TeamDetail(
         team=team,
         reported_status=verdict.reported_status,
@@ -100,6 +125,10 @@ def team_detail(team_id: str) -> TeamDetail | None:
         signals=list(verdict.signals),
         explanation=verdict.explanation,
         evidence=[_evidence_item(aid, arts) for aid in verdict.evidence],
+        audience=audience,
+        report_sections=sections,
+        report_sources=sources,
+        report_insufficient=insufficient,
     )
 
 
@@ -134,6 +163,41 @@ def _headline(verdict: Verdict) -> str:
     return f"{base} (consistent)."
 
 
+def _report_sources(report, arts: dict[str, Artifact]) -> list[EvidenceItem]:
+    """Unique cited artifacts behind the report's claims, in first-cited order."""
+    seen: list[str] = []
+    out: list[EvidenceItem] = []
+    for claim in report.claims:
+        for cid in claim.citations:
+            if cid not in seen:
+                seen.append(cid)
+                out.append(_evidence_item(cid, arts))
+    return out
+
+
+def _ordered_section_keys(audience: str, sections: dict[str, str]) -> list[str]:
+    """Order sections by the audience profile, not writer insertion order, so a future
+    writer that emits sections in a different order still renders in the intended order."""
+    order = PROFILES[audience].required_sections
+    ordered = [k for k in order if k in sections]
+    extra = [k for k in sections if k not in order]
+    return ordered + extra
+
+
+def _report_for(
+    team: str, audience: str, arts: dict[str, Artifact]
+) -> tuple[list[ReportSection], list[EvidenceItem], bool]:
+    """Run the writer seam and shape its report for display."""
+    report = _writer({"team": team, "audience": audience, "artifacts": arts})
+    if report.insufficient_evidence:
+        return [], [], True
+    sections = [
+        ReportSection(heading_for(k), report.sections[k])
+        for k in _ordered_section_keys(audience, report.sections)
+    ]
+    return sections, _report_sources(report, arts), False
+
+
 def _evidence_item(artifact_id: str, arts: dict[str, Artifact]) -> EvidenceItem:
     art = arts.get(artifact_id)
     if art is None:
@@ -160,7 +224,7 @@ def _insufficient_row(team: str) -> TeamRow:
     )
 
 
-def _insufficient_detail(team: str) -> TeamDetail:
+def _insufficient_detail(team: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail:
     return TeamDetail(
         team=team,
         reported_status="unknown",
@@ -171,4 +235,8 @@ def _insufficient_detail(team: str) -> TeamDetail:
         signals=[],
         explanation="This team has too little Sprint 15 data (no burndown or status) to judge.",
         evidence=[],
+        audience=normalize_audience(audience),
+        report_sections=[],
+        report_sources=[],
+        report_insufficient=True,
     )

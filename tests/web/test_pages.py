@@ -20,3 +20,17 @@ def test_team_page_atlas_shows_evidence_and_signals(client):
 
 def test_team_page_unknown_404(client):
     assert client.get("/team/nope").status_code == 404
+
+
+def test_team_page_shows_report_and_audience_switch(client):
+    html = client.get("/team/atlas").text
+    assert "Status report" in html
+    assert "?audience=exec" in html
+    assert "?audience=programme" in html
+    assert "?audience=team" in html
+    assert "Risks" in html  # programme default section heading
+
+
+def test_team_page_exec_audience_renders_exec_section(client):
+    html = client.get("/team/atlas?audience=exec").text
+    assert "Recommended next step" in html

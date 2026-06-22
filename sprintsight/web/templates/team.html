@@ -34,6 +34,30 @@
     </li>
   {% endfor %}
 </ul>
+
+<h2>Status report</h2>
+<p class="audience-switch">
+  {% for a in ["exec", "programme", "team"] %}
+    <a href="/team/{{ d.team|lower }}?audience={{ a }}"
+       class="aud{% if d.audience == a %} aud-active{% endif %}">{{ a|capitalize }}</a>
+  {% endfor %}
+</p>
+{% if d.report_insufficient %}
+  <p class="explanation">Not enough evidence to write a report.</p>
+{% else %}
+  {% for s in d.report_sections %}
+    <h3>{{ s.heading }}</h3>
+    <p class="report-body">{{ s.body }}</p>
+  {% endfor %}
+  {% if d.report_sources %}
+  <h3>Sources</h3>
+  <ul class="sources">
+    {% for src in d.report_sources %}
+      <li><strong>{{ src.title }}</strong> <code>{{ src.artifact_id }}</code></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+{% endif %}
 {% else %}
 <p class="explanation">{{ d.explanation }}</p>
 {% endif %}
