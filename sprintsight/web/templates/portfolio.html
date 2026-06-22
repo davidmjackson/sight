@@ -5,7 +5,7 @@
 <p class="lede">Reported status versus what the data actually shows, as of Sprint {{ summary.sprint }}.</p>
 
 <div class="summary-band">
-  <div class="kpi kpi-alert">
+  <div class="kpi{% if summary.watermelons %} kpi-alert{% endif %}">
     <span class="num">{{ summary.watermelons }}</span>
     <span class="label">Watermelons flagged</span>
   </div>
