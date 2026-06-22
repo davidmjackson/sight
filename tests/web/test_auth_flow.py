@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from sprintsight.web.app import create_app
@@ -49,6 +50,10 @@ def test_logout_clears_session():
     assert resp.status_code == 303
     assert resp.headers["location"] == "/login"
 
+    after = client.get("/", follow_redirects=False)
+    assert after.status_code == 303
+    assert after.headers["location"] == "/login"
+
 
 def test_anonymous_html_redirects_to_login():
     resp = _client().get("/", follow_redirects=False)
@@ -73,7 +78,5 @@ def test_anonymous_api_team_returns_401():
 def test_create_app_refuses_without_secret_in_non_dev(monkeypatch):
     monkeypatch.delenv("SPRINTSIGHT_SECRET_KEY", raising=False)
     monkeypatch.delenv("SPRINTSIGHT_ENV", raising=False)
-    import pytest
-
     with pytest.raises(RuntimeError):
         create_app()

@@ -24,5 +24,8 @@ def hash_password(password: str, salt_hex: str) -> str:
 
 
 def verify_password(password: str, salt_hex: str, expected_hash_hex: str) -> bool:
-    actual = hash_password(password, salt_hex)
+    try:
+        actual = hash_password(password, salt_hex)
+    except ValueError:
+        return False
     return hmac.compare_digest(actual, expected_hash_hex)

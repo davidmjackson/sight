@@ -22,3 +22,8 @@ def test_new_salt_is_random_and_changes_hash():
 def test_hash_is_deterministic_for_same_salt():
     salt = new_salt()
     assert hash_password("pw", salt) == hash_password("pw", salt)
+
+
+def test_verify_returns_false_on_corrupt_salt():
+    # non-hex salt must fail closed (False), not raise
+    assert verify_password("pw", "not-hex-salt", "deadbeef") is False
