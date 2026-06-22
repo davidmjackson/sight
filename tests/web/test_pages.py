@@ -59,3 +59,15 @@ def test_team_page_audience_tabs_present(client):
     html = client.get("/team/atlas").text
     assert "audience-tabs" in html
     assert html.count('class="aud') >= 3  # three audience tabs
+
+
+def test_login_page_uses_shell(anon_client):
+    html = anon_client.get("/login").text
+    assert "app-header" in html  # inherits the branded shell
+    assert "brand-logo" in html
+
+
+def test_admin_accounts_uses_shell(client):
+    html = client.get("/admin/accounts").text
+    assert "app-header" in html
+    assert "Accounts" in html
