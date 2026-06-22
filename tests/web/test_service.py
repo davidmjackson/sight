@@ -64,3 +64,47 @@ def test_team_detail_echo_insufficient():
     assert detail is not None
     assert detail.has_verdict is False
     assert detail.evidence == []
+
+
+def test_team_detail_programme_report_sections_and_sources():
+    d = service.team_detail("atlas", "programme")
+    assert d is not None
+    assert d.audience == "programme"
+    assert d.report_insufficient is False
+    headings = [s.heading for s in d.report_sections]
+    assert "Overall status" in headings
+    assert "Risks" in headings
+    assert "Dependencies" in headings
+    source_ids = {src.artifact_id for src in d.report_sources}
+    assert "status-atlas-s15" in source_ids
+
+
+def test_team_detail_exec_report_has_exec_sections_only():
+    d = service.team_detail("atlas", "exec")
+    headings = [s.heading for s in d.report_sections]
+    assert "Top risks" in headings
+    assert "Recommended next step" in headings
+    assert "Sprint metrics" not in headings
+
+
+def test_team_detail_team_audience_has_sprint_metrics():
+    d = service.team_detail("atlas", "team")
+    headings = [s.heading for s in d.report_sections]
+    assert "Sprint metrics" in headings
+
+
+def test_team_detail_unknown_audience_falls_back_to_programme():
+    d = service.team_detail("atlas", "bogus")
+    assert d.audience == "programme"
+
+
+def test_team_detail_default_audience_is_programme():
+    d = service.team_detail("atlas")
+    assert d.audience == "programme"
+
+
+def test_echo_report_is_insufficient():
+    d = service.team_detail("echo")
+    assert d is not None
+    assert d.report_insufficient is True
+    assert d.report_sections == []
