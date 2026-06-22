@@ -66,7 +66,7 @@ def create_app() -> FastAPI:
         return [asdict(row) for row in service.portfolio()]
 
     @app.get("/api/team/{team_id}")
-    def api_team(  # noqa: B008
+    def api_team(
         team_id: str,
         audience: str = service.DEFAULT_AUDIENCE,
         user: User = Depends(require_api_user),  # noqa: B008

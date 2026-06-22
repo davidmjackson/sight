@@ -49,12 +49,14 @@
     <h3>{{ s.heading }}</h3>
     <p class="report-body">{{ s.body }}</p>
   {% endfor %}
+  {% if d.report_sources %}
   <h3>Sources</h3>
   <ul class="sources">
     {% for src in d.report_sources %}
       <li><strong>{{ src.title }}</strong> <code>{{ src.artifact_id }}</code></li>
     {% endfor %}
   </ul>
+  {% endif %}
 {% endif %}
 {% else %}
 <p class="explanation">{{ d.explanation }}</p>

@@ -108,3 +108,9 @@ def test_echo_report_is_insufficient():
     assert d is not None
     assert d.report_insufficient is True
     assert d.report_sections == []
+
+
+def test_team_detail_programme_sections_in_profile_order():
+    d = service.team_detail("atlas", "programme")
+    headings = [s.heading for s in d.report_sections]
+    assert headings == ["Overall status", "Risks", "Dependencies", "Milestones"]

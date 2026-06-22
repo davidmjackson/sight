@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from sprintsight.evals.fixtures import Artifact, artifacts_for
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.builder import graph_detector
+from sprintsight.report.audience import PROFILES
 from sprintsight.report.render import heading_for
 from sprintsight.report.writer import ReportWriter, compose
 
@@ -174,6 +175,15 @@ def _report_sources(report, arts: dict[str, Artifact]) -> list[EvidenceItem]:
     return out
 
 
+def _ordered_section_keys(audience: str, sections: dict[str, str]) -> list[str]:
+    """Order sections by the audience profile, not writer insertion order, so a future
+    writer that emits sections in a different order still renders in the intended order."""
+    order = PROFILES[audience].required_sections
+    ordered = [k for k in order if k in sections]
+    extra = [k for k in sections if k not in order]
+    return ordered + extra
+
+
 def _report_for(
     team: str, audience: str, arts: dict[str, Artifact]
 ) -> tuple[list[ReportSection], list[EvidenceItem], bool]:
@@ -181,7 +191,10 @@ def _report_for(
     report = _writer({"team": team, "audience": audience, "artifacts": arts})
     if report.insufficient_evidence:
         return [], [], True
-    sections = [ReportSection(heading_for(k), v) for k, v in report.sections.items()]
+    sections = [
+        ReportSection(heading_for(k), report.sections[k])
+        for k in _ordered_section_keys(audience, report.sections)
+    ]
     return sections, _report_sources(report, arts), False
 
 
