@@ -57,4 +57,12 @@ def test_session_secret_prefers_env(monkeypatch):
 
 def test_session_secret_falls_back_to_dev_default(monkeypatch):
     monkeypatch.delenv("SPRINTSIGHT_SECRET_KEY", raising=False)
+    monkeypatch.setenv("SPRINTSIGHT_ENV", "dev")
     assert session_secret() != ""
+
+
+def test_session_secret_raises_without_secret_in_non_dev(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_SECRET_KEY", raising=False)
+    monkeypatch.delenv("SPRINTSIGHT_ENV", raising=False)
+    with pytest.raises(RuntimeError):
+        session_secret()

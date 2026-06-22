@@ -68,3 +68,12 @@ def test_anonymous_api_portfolio_returns_401():
 
 def test_anonymous_api_team_returns_401():
     assert _client().get("/api/team/atlas").status_code == 401
+
+
+def test_create_app_refuses_without_secret_in_non_dev(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_SECRET_KEY", raising=False)
+    monkeypatch.delenv("SPRINTSIGHT_ENV", raising=False)
+    import pytest
+
+    with pytest.raises(RuntimeError):
+        create_app()

@@ -11,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from sprintsight.web import service
 from sprintsight.web.auth.session import (
+    is_dev,
     login_session,
     logout_session,
     require_api_user,
@@ -26,7 +27,10 @@ _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
 def create_app() -> FastAPI:
     app = FastAPI(title="Sprintsight watermelon detector")
     app.add_middleware(
-        SessionMiddleware, secret_key=session_secret(), same_site="lax", https_only=False
+        SessionMiddleware,
+        secret_key=session_secret(),
+        same_site="lax",
+        https_only=not is_dev(),
     )
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
     authenticator = SeedAuthenticator()

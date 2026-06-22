@@ -16,8 +16,20 @@ SESSION_KEY = "user"
 _DEV_SECRET = "dev-only-insecure-secret-change-me"
 
 
+def is_dev() -> bool:
+    return os.environ.get("SPRINTSIGHT_ENV") == "dev"
+
+
 def session_secret() -> str:
-    return os.environ.get("SPRINTSIGHT_SECRET_KEY", _DEV_SECRET)
+    secret = os.environ.get("SPRINTSIGHT_SECRET_KEY")
+    if secret:
+        return secret
+    if is_dev():
+        return _DEV_SECRET
+    raise RuntimeError(
+        "SPRINTSIGHT_SECRET_KEY is required. Set it, or set SPRINTSIGHT_ENV=dev "
+        "for local offline use."
+    )
 
 
 def login_session(request: Request, user: User) -> None:
