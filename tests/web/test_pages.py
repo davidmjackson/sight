@@ -40,3 +40,10 @@ def test_shell_has_branded_header(client):
     html = client.get("/").text
     assert "app-header" in html
     assert "brand-logo" in html
+
+
+def test_portfolio_page_shows_summary_band(client):
+    html = client.get("/").text
+    assert "summary-band" in html
+    assert "Watermelon" in html  # KPI label
+    assert "Teams tracked" in html
