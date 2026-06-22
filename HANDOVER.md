@@ -25,7 +25,7 @@ Format per item: concept | one line on what is new | code/stage pointer | date f
 - An auth seam + session cookie (faking the identity provider offline) | we put a login in front of the web app, but instead of wiring real Supabase we built an Authenticator seam with a local SeedAuthenticator stand-in (same trick as faking the DB and the embedder), and the logged-in identity rides in a signed session cookie; the real provider is a deferred stub behind the same interface | sprintsight/web/auth/ (users.py seam, session.py cookie, hashing.py) | flagged 2026-06-22
 
 ## Where we are
-Stage 5 (Accounts / Auth / Admin, Epic SS-8, Story SS-34) — FIRST SLICE DONE on branch `stage5-auth-accounts` (not yet merged). The project's first auth layer.
+Stage 5 (Accounts / Auth / Admin, Epic SS-8, Story SS-34) — FIRST SLICE DONE, merged to `main` (bdb0680); branch `stage5-auth-accounts` deleted. The project's first auth layer.
 - Puts a login gate in front of the Stage 6 web app, offline, behind an `Authenticator` seam.
   New package `sprintsight/web/auth/`: `hashing.py` (stdlib PBKDF2 password hash/verify, zero new
   crypto deps), `users.py` (`User`, the `Authenticator` seam, the offline `SeedAuthenticator`, and a
@@ -52,8 +52,8 @@ Stage 5 (Accounts / Auth / Admin, Epic SS-8, Story SS-34) — FIRST SLICE DONE o
 - OUT OF SCOPE (deferred, by design): real Supabase Auth wiring, login CSRF + Origin checks, signup
   / password-reset / email flows, the viewer-vs-delivery_manager distinction (no feature needs it
   yet), multi-tenant `tenant_id`, and any write/RAID action.
-- OUTSTANDING: final whole-branch review, then integrate the branch (merge/PR); Jira SS-34 -> In
-  Review -> Done.
+- DONE: final whole-branch opus review (no Critical/Important; 3 minors fixed), merged to `main`
+  (bdb0680); Jira SS-34 In Review -> Done.
 
 Stage 6 (Portfolio + Watermelon UI, Epic SS-6) — FIRST SLICE DONE, merged via PR #1 (b9cbe66).
 - The project's first web UI and first HTTP serving layer. A FastAPI app at `sprintsight/web/`:
