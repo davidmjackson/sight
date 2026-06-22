@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Accounts - Sprintsight{% endblock %}
+{% block main %}
+<section class="accounts">
+  <h1>Accounts</h1>
+  <p class="sub">Admin only. Synthetic demo users.</p>
+  <table>
+    <thead><tr><th>Email</th><th>Role</th></tr></thead>
+    <tbody>
+      {% for a in accounts %}
+      <tr><td>{{ a.email }}</td><td>{{ a.role }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

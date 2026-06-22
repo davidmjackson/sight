@@ -91,6 +91,19 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="unknown team")
         return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": user})
 
+    @app.get("/admin/accounts", response_class=HTMLResponse)
+    def page_admin_accounts(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
+        if user.role != "admin":
+            raise HTTPException(status_code=403, detail="admin only")
+        return _TEMPLATES.TemplateResponse(
+            request,
+            "admin_accounts.html",
+            {"user": user, "accounts": authenticator.all_users()},
+        )
+
     return app
 
 
