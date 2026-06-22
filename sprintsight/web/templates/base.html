@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <header>
-    <a href="/" class="brand">Sprintsight</a> <span class="sub">watermelon detector</span>
+  <header class="app-header">
+    <a href="/" class="brand"><span class="brand-logo"></span>Sprintsight</a>
+    <span class="sub">watermelon detector</span>
     <span class="session">
       {% if user %}{{ user.email }} ({{ user.role }}) &middot; <a href="/logout">Sign out</a>
       {% else %}<a href="/login">Sign in</a>{% endif %}

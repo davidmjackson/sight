@@ -34,3 +34,9 @@ def test_team_page_shows_report_and_audience_switch(client):
 def test_team_page_exec_audience_renders_exec_section(client):
     html = client.get("/team/atlas?audience=exec").text
     assert "Recommended next step" in html
+
+
+def test_shell_has_branded_header(client):
+    html = client.get("/").text
+    assert "app-header" in html
+    assert "brand-logo" in html
