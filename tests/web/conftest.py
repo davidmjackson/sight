@@ -36,3 +36,10 @@ def viewer_client(anon_client: TestClient) -> TestClient:
 @pytest.fixture
 def manager_client(anon_client: TestClient) -> TestClient:
     return login(anon_client, MANAGER)
+
+
+@pytest.fixture(autouse=True)
+def _clear_report_cache():
+    from sprintsight.web import service
+    service.clear_report_cache()
+    yield

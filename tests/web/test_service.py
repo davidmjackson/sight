@@ -1,3 +1,4 @@
+from sprintsight.report.writer import compose
 from sprintsight.web import service
 
 
@@ -114,3 +115,97 @@ def test_team_detail_programme_sections_in_profile_order():
     d = service.team_detail("atlas", "programme")
     headings = [s.heading for s in d.report_sections]
     assert headings == ["Overall status", "Risks", "Dependencies", "Milestones"]
+
+
+def _real_key():
+    return "sk-ant-" + "x" * 60  # 67 chars: passes the shape check
+
+
+def test_llm_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is False
+    assert service._active_writer() is compose
+
+
+def test_llm_enabled_needs_flag_and_key(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is True
+    assert service._active_writer() is not compose
+
+
+def test_llm_flag_on_but_no_key_stays_off(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert service._llm_enabled() is False
+    assert service._active_writer() is compose
+
+
+def test_llm_key_present_but_flag_off_stays_off(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is False
+
+
+def test_llm_rejects_fake_key_shape(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    assert service._llm_enabled() is False
+
+
+def test_report_cache_calls_writer_once_per_key(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.team_detail("atlas", "programme")
+    assert calls == ["programme"]  # second call served from cache
+
+
+def test_report_cache_separates_audiences(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.team_detail("atlas", "exec")
+    assert calls == ["programme", "exec"]  # distinct keys, both computed
+
+
+def test_clear_report_cache_forces_recompute(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.clear_report_cache()
+    service.team_detail("atlas", "programme")
+    assert calls == ["programme", "programme"]
+
+
+def test_offline_served_report_matches_compose(monkeypatch):
+    # With the gate off, the served sections equal what compose produces directly.
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    from sprintsight.evals.fixtures import artifacts_for
+    from sprintsight.report.render import heading_for
+
+    d = service.team_detail("atlas", "programme")
+    report = compose({"team": "Atlas", "audience": "programme",
+                      "artifacts": artifacts_for("Atlas", [14, 15])})
+    served = {s.heading: s.body for s in d.report_sections}
+    expected = {heading_for(k): v for k, v in report.sections.items()}
+    assert served == expected
