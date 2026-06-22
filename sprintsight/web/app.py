@@ -66,8 +66,12 @@ def create_app() -> FastAPI:
         return [asdict(row) for row in service.portfolio()]
 
     @app.get("/api/team/{team_id}")
-    def api_team(team_id: str, user: User = Depends(require_api_user)) -> dict:  # noqa: B008
-        detail = service.team_detail(team_id)
+    def api_team(  # noqa: B008
+        team_id: str,
+        audience: str = service.DEFAULT_AUDIENCE,
+        user: User = Depends(require_api_user),  # noqa: B008
+    ) -> dict:
+        detail = service.team_detail(team_id, audience)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
         return asdict(detail)
@@ -82,11 +86,13 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)
-    def page_team(request: Request, team_id: str) -> HTMLResponse:
+    def page_team(
+        request: Request, team_id: str, audience: str = service.DEFAULT_AUDIENCE
+    ) -> HTMLResponse:
         user = session_user(request)
         if user is None:
             return RedirectResponse("/login", status_code=303)
-        detail = service.team_detail(team_id)
+        detail = service.team_detail(team_id, audience)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
         return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": user})
