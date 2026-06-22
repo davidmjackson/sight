@@ -81,8 +81,11 @@ def create_app() -> FastAPI:
         user = session_user(request)
         if user is None:
             return RedirectResponse("/login", status_code=303)
+        rows = service.portfolio()
         return _TEMPLATES.TemplateResponse(
-            request, "portfolio.html", {"rows": service.portfolio(), "user": user}
+            request,
+            "portfolio.html",
+            {"rows": rows, "summary": service.summarize(rows), "user": user},
         )
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)

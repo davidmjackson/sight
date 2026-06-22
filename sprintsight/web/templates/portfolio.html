@@ -2,7 +2,27 @@
 {% block title %}Portfolio{% endblock %}
 {% block main %}
 <h1>Team portfolio</h1>
-<p class="lede">Reported status versus what the data actually shows, as of Sprint 15.</p>
+<p class="lede">Reported status versus what the data actually shows, as of Sprint {{ summary.sprint }}.</p>
+
+<div class="summary-band">
+  <div class="kpi{% if summary.watermelons %} kpi-alert{% endif %}">
+    <span class="num">{{ summary.watermelons }}</span>
+    <span class="label">Watermelons flagged</span>
+  </div>
+  <div class="kpi">
+    <span class="num">{{ summary.teams_tracked }}</span>
+    <span class="label">Teams tracked</span>
+  </div>
+  <div class="kpi">
+    <span class="num">{{ summary.insufficient }}</span>
+    <span class="label">Insufficient evidence</span>
+  </div>
+  <div class="kpi">
+    <span class="num">{{ summary.sprint }}</span>
+    <span class="label">Current sprint</span>
+  </div>
+</div>
+
 <table class="portfolio">
   <thead>
     <tr><th>Team</th><th>Reported</th><th>Actual</th><th>Flag</th></tr>

@@ -209,3 +209,35 @@ def test_offline_served_report_matches_compose(monkeypatch):
     served = {s.heading: s.body for s in d.report_sections}
     expected = {heading_for(k): v for k, v in report.sections.items()}
     assert served == expected
+
+
+def _summary_row(team, is_watermelon=False, has_verdict=True):
+    return service.TeamRow(
+        team=team,
+        reported_status="green",
+        actual_status="green",
+        is_watermelon=is_watermelon,
+        headline="",
+        has_verdict=has_verdict,
+    )
+
+
+def test_summary_matches_seed_ground_truth():
+    s = service.summarize(service.portfolio())
+    assert s.teams_tracked == 5
+    assert s.watermelons == 1  # Atlas
+    assert s.insufficient == 1  # Echo
+    assert s.sprint == 15
+
+
+def test_summary_all_consistent_has_no_watermelons():
+    rows = [_summary_row("A"), _summary_row("B")]
+    s = service.summarize(rows)
+    assert s.watermelons == 0
+    assert s.teams_tracked == 2
+    assert s.insufficient == 0
+
+
+def test_summary_counts_insufficient_rows():
+    rows = [_summary_row("A", has_verdict=False), _summary_row("B", has_verdict=False)]
+    assert service.summarize(rows).insufficient == 2
