@@ -47,3 +47,15 @@ def test_portfolio_page_shows_summary_band(client):
     assert "summary-band" in html
     assert "Watermelon" in html  # KPI label
     assert "Teams tracked" in html
+
+
+def test_team_page_atlas_has_verdict_banner(client):
+    html = client.get("/team/atlas").text
+    assert "verdict-banner" in html
+    assert "verdict-emoji" in html
+
+
+def test_team_page_audience_tabs_present(client):
+    html = client.get("/team/atlas").text
+    assert "audience-tabs" in html
+    assert html.count('class="aud') >= 3  # three audience tabs

@@ -1,20 +1,33 @@
 {% extends "base.html" %}
 {% block title %}{{ d.team }}{% endblock %}
 {% block main %}
-<p><a href="/">&larr; Back to portfolio</a></p>
-<h1>
-  {{ d.team }}
-  {% if d.has_verdict and d.is_watermelon %}
-    <span class="badge badge-watermelon">watermelon</span>
-  {% endif %}
-</h1>
-<p class="headline">{{ d.headline }}</p>
+<p><a href="/" class="back">&larr; Back to portfolio</a></p>
 
+{% if d.has_verdict and d.is_watermelon %}
+<div class="verdict-banner">
+  <span class="verdict-emoji">🍉</span>
+  <div>
+    <h1>{{ d.team }} <span class="badge badge-watermelon">watermelon</span></h1>
+    <p class="sub">
+      Reported <span class="rag rag-{{ d.reported_status }}">{{ d.reported_status }}</span>
+      but computed actual <span class="rag rag-{{ d.actual_status }}">{{ d.actual_status }}</span>.
+      The status looks healthier than the data supports.
+    </p>
+  </div>
+</div>
+{% else %}
+<h1>{{ d.team }}</h1>
+<p class="headline">{{ d.headline }}</p>
+{% endif %}
+
+<section class="detail">
 {% if d.has_verdict %}
+{% if not d.is_watermelon %}
 <p>
   Reported <span class="rag rag-{{ d.reported_status }}">{{ d.reported_status }}</span>,
   computed actual <span class="rag rag-{{ d.actual_status }}">{{ d.actual_status }}</span>.
 </p>
+{% endif %}
 
 <h2>Why</h2>
 <p class="explanation">{{ d.explanation }}</p>
@@ -27,7 +40,7 @@
 <h2>Evidence</h2>
 <ul class="evidence">
   {% for e in d.evidence %}
-    <li>
+    <li class="evidence-card">
       <strong>{{ e.title }}</strong>
       <code>{{ e.artifact_id }}</code>
       {% if e.snippet %}<div class="snippet">{{ e.snippet }}</div>{% endif %}
@@ -36,7 +49,7 @@
 </ul>
 
 <h2>Status report</h2>
-<p class="audience-switch">
+<p class="audience-tabs audience-switch">
   {% for a in ["exec", "programme", "team"] %}
     <a href="/team/{{ d.team|lower }}?audience={{ a }}"
        class="aud{% if d.audience == a %} aud-active{% endif %}">{{ a|capitalize }}</a>
@@ -50,15 +63,18 @@
     <p class="report-body">{{ s.body }}</p>
   {% endfor %}
   {% if d.report_sources %}
-  <h3>Sources</h3>
-  <ul class="sources">
-    {% for src in d.report_sources %}
-      <li><strong>{{ src.title }}</strong> <code>{{ src.artifact_id }}</code></li>
-    {% endfor %}
-  </ul>
+  <div class="sources-list">
+    <h3>Sources</h3>
+    <ul class="sources">
+      {% for src in d.report_sources %}
+        <li><strong>{{ src.title }}</strong> <code>{{ src.artifact_id }}</code></li>
+      {% endfor %}
+    </ul>
+  </div>
   {% endif %}
 {% endif %}
 {% else %}
 <p class="explanation">{{ d.explanation }}</p>
 {% endif %}
+</section>
 {% endblock %}
