@@ -48,3 +48,23 @@ def test_logout_clears_session():
     resp = client.get("/logout", follow_redirects=False)
     assert resp.status_code == 303
     assert resp.headers["location"] == "/login"
+
+
+def test_anonymous_html_redirects_to_login():
+    resp = _client().get("/", follow_redirects=False)
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/login"
+
+
+def test_anonymous_team_page_redirects_to_login():
+    resp = _client().get("/team/atlas", follow_redirects=False)
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/login"
+
+
+def test_anonymous_api_portfolio_returns_401():
+    assert _client().get("/api/portfolio").status_code == 401
+
+
+def test_anonymous_api_team_returns_401():
+    assert _client().get("/api/team/atlas").status_code == 401

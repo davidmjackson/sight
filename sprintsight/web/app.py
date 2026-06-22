@@ -3,15 +3,21 @@
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from sprintsight.web import service
-from sprintsight.web.auth.session import login_session, logout_session, session_secret
-from sprintsight.web.auth.users import SeedAuthenticator
+from sprintsight.web.auth.session import (
+    login_session,
+    logout_session,
+    require_api_user,
+    session_secret,
+    session_user,
+)
+from sprintsight.web.auth.users import SeedAuthenticator, User
 
 _HERE = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
@@ -52,11 +58,11 @@ def create_app() -> FastAPI:
         return RedirectResponse("/login", status_code=303)
 
     @app.get("/api/portfolio")
-    def api_portfolio() -> list[dict]:
+    def api_portfolio(user: User = Depends(require_api_user)) -> list[dict]:  # noqa: B008
         return [asdict(row) for row in service.portfolio()]
 
     @app.get("/api/team/{team_id}")
-    def api_team(team_id: str) -> dict:
+    def api_team(team_id: str, user: User = Depends(require_api_user)) -> dict:  # noqa: B008
         detail = service.team_detail(team_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
@@ -64,16 +70,22 @@ def create_app() -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def page_portfolio(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
         return _TEMPLATES.TemplateResponse(
-            request, "portfolio.html", {"rows": service.portfolio(), "user": None}
+            request, "portfolio.html", {"rows": service.portfolio(), "user": user}
         )
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)
     def page_team(request: Request, team_id: str) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
         detail = service.team_detail(team_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
-        return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": None})
+        return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": user})
 
     return app
 

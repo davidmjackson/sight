@@ -1,11 +1,4 @@
-from fastapi.testclient import TestClient
-
-from sprintsight.web.app import create_app
-
-client = TestClient(create_app())
-
-
-def test_api_portfolio_verdicts():
+def test_api_portfolio_verdicts(client):
     resp = client.get("/api/portfolio")
     assert resp.status_code == 200
     rows = {row["team"]: row for row in resp.json()}
@@ -15,7 +8,7 @@ def test_api_portfolio_verdicts():
     assert rows["Echo"]["has_verdict"] is False
 
 
-def test_api_team_atlas_detail():
+def test_api_team_atlas_detail(client):
     resp = client.get("/api/team/atlas")
     assert resp.status_code == 200
     body = resp.json()
@@ -25,5 +18,5 @@ def test_api_team_atlas_detail():
     assert body["signals"]
 
 
-def test_api_team_unknown_404():
+def test_api_team_unknown_404(client):
     assert client.get("/api/team/nope").status_code == 404
