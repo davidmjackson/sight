@@ -152,3 +152,60 @@ def test_llm_rejects_fake_key_shape(monkeypatch):
     monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
     assert service._llm_enabled() is False
+
+
+def test_report_cache_calls_writer_once_per_key(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.team_detail("atlas", "programme")
+    assert calls == ["programme"]  # second call served from cache
+
+
+def test_report_cache_separates_audiences(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.team_detail("atlas", "exec")
+    assert calls == ["programme", "exec"]  # distinct keys, both computed
+
+
+def test_clear_report_cache_forces_recompute(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    calls = []
+
+    def counting(inputs):
+        calls.append(inputs["audience"])
+        return compose(inputs)
+
+    monkeypatch.setattr(service, "_writer", counting)
+    service.team_detail("atlas", "programme")
+    service.clear_report_cache()
+    service.team_detail("atlas", "programme")
+    assert calls == ["programme", "programme"]
+
+
+def test_offline_served_report_matches_compose(monkeypatch):
+    # With the gate off, the served sections equal what compose produces directly.
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    from sprintsight.evals.fixtures import artifacts_for
+    from sprintsight.report.render import heading_for
+
+    d = service.team_detail("atlas", "programme")
+    report = compose({"team": "Atlas", "audience": "programme",
+                      "artifacts": artifacts_for("Atlas", [14, 15])})
+    served = {s.heading: s.body for s in d.report_sections}
+    expected = {heading_for(k): v for k, v in report.sections.items()}
+    assert served == expected

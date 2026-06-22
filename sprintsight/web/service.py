@@ -67,6 +67,14 @@ def _active_writer() -> ReportWriter:
     return _writer
 
 
+_report_cache: dict[tuple[str, str], tuple[list["ReportSection"], list["EvidenceItem"], bool]] = {}
+
+
+def clear_report_cache() -> None:
+    """Drop all memoized reports. Used between tests; production clears on restart."""
+    _report_cache.clear()
+
+
 @dataclass(frozen=True)
 class ReportSection:
     heading: str
@@ -211,15 +219,22 @@ def _ordered_section_keys(audience: str, sections: dict[str, str]) -> list[str]:
 def _report_for(
     team: str, audience: str, arts: dict[str, Artifact]
 ) -> tuple[list[ReportSection], list[EvidenceItem], bool]:
-    """Run the writer seam and shape its report for display."""
+    """Run the writer seam and shape its report for display, memoized per (team, audience)."""
+    cache_key = (team, audience)
+    cached = _report_cache.get(cache_key)
+    if cached is not None:
+        return cached
     report = _active_writer()({"team": team, "audience": audience, "artifacts": arts})
     if report.insufficient_evidence:
-        return [], [], True
-    sections = [
-        ReportSection(heading_for(k), report.sections[k])
-        for k in _ordered_section_keys(audience, report.sections)
-    ]
-    return sections, _report_sources(report, arts), False
+        result: tuple[list[ReportSection], list[EvidenceItem], bool] = ([], [], True)
+    else:
+        sections = [
+            ReportSection(heading_for(k), report.sections[k])
+            for k in _ordered_section_keys(audience, report.sections)
+        ]
+        result = (sections, _report_sources(report, arts), False)
+    _report_cache[cache_key] = result
+    return result
 
 
 def _evidence_item(artifact_id: str, arts: dict[str, Artifact]) -> EvidenceItem:
