@@ -1,14 +1,24 @@
-"""Stage 6 FastAPI app (SS-6): portfolio grid + per-team watermelon drill-in."""
+"""Stage 6 FastAPI app (SS-6) + Stage 5 auth gate (SS-34)."""
 
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
 from sprintsight.web import service
+from sprintsight.web.auth.session import (
+    is_dev,
+    login_session,
+    logout_session,
+    require_api_user,
+    session_secret,
+    session_user,
+)
+from sprintsight.web.auth.users import SeedAuthenticator, User
 
 _HERE = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
@@ -16,14 +26,47 @@ _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Sprintsight watermelon detector")
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=session_secret(),
+        same_site="lax",
+        https_only=not is_dev(),
+    )
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
+    authenticator = SeedAuthenticator()
+
+    @app.get("/login", response_class=HTMLResponse)
+    def page_login(request: Request) -> HTMLResponse:
+        return _TEMPLATES.TemplateResponse(
+            request, "login.html", {"error": None, "user": None}
+        )
+
+    @app.post("/login")
+    def do_login(
+        request: Request, email: str = Form(...), password: str = Form(...)
+    ):
+        user = authenticator.authenticate(email, password)
+        if user is None:
+            return _TEMPLATES.TemplateResponse(
+                request,
+                "login.html",
+                {"error": "Invalid email or password.", "user": None},
+                status_code=200,
+            )
+        login_session(request, user)
+        return RedirectResponse("/", status_code=303)
+
+    @app.get("/logout")
+    def do_logout(request: Request) -> RedirectResponse:
+        logout_session(request)
+        return RedirectResponse("/login", status_code=303)
 
     @app.get("/api/portfolio")
-    def api_portfolio() -> list[dict]:
+    def api_portfolio(user: User = Depends(require_api_user)) -> list[dict]:  # noqa: B008
         return [asdict(row) for row in service.portfolio()]
 
     @app.get("/api/team/{team_id}")
-    def api_team(team_id: str) -> dict:
+    def api_team(team_id: str, user: User = Depends(require_api_user)) -> dict:  # noqa: B008
         detail = service.team_detail(team_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
@@ -31,16 +74,35 @@ def create_app() -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def page_portfolio(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
         return _TEMPLATES.TemplateResponse(
-            request, "portfolio.html", {"rows": service.portfolio()}
+            request, "portfolio.html", {"rows": service.portfolio(), "user": user}
         )
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)
     def page_team(request: Request, team_id: str) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
         detail = service.team_detail(team_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
-        return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail})
+        return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": user})
+
+    @app.get("/admin/accounts", response_class=HTMLResponse)
+    def page_admin_accounts(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
+        if user.role != "admin":
+            raise HTTPException(status_code=403, detail="admin only")
+        return _TEMPLATES.TemplateResponse(
+            request,
+            "admin_accounts.html",
+            {"user": user, "accounts": authenticator.all_users()},
+        )
 
     return app
 
