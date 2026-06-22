@@ -1,0 +1,12 @@
+- email: admin@sprintsight.test
+  role: admin
+  salt: 34ea0b6d0bb3d04698610bbe9662fa2a
+  hash: 534cd2797540c37234addfbbcea99a696e7a1aca1e7af417e5bdccabb7157061
+- email: manager@sprintsight.test
+  role: delivery_manager
+  salt: 5c2a9ae0484949bd3fc26a714137f406
+  hash: 009307e0db05f39acb1dc1a3ba5e6ed2b73ccc1b3f0d76615177c37687780da2
+- email: viewer@sprintsight.test
+  role: viewer
+  salt: 3f7c4978d6d7bc6da6a8429e61aa87f6
+  hash: 5fbd5dc0d4481f68d67d787c75526ba66a5ef9e25b978f9f39d4ec69293c3c1b
