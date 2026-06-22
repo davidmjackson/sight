@@ -23,6 +23,7 @@ Format per item: concept | one line on what is new | code/stage pointer | date f
 - An LLM gate that can disqualify itself | the judge gate runs its own calibration meta-eval first; a judge that fails calibration is not trusted to block the build, so a flaky or misconfigured judge cannot turn CI red | scripts/run_report_eval.py `_run_judge_gate` + sprintsight/evals/judge.py `judge_gate_decision` + judge-gate-arc | flagged 2026-06-21
 - An "eval" for a UI tests the served data, not the pixels | Stage 6's first screen stays eval-first by asserting the FastAPI service/JSON output matches the watermelon ground truth (Atlas flagged red, Echo insufficient-evidence), with light HTML smoke tests, instead of screenshot testing | sprintsight/web/service.py + tests/web/ | flagged 2026-06-21
 - An auth seam + session cookie (faking the identity provider offline) | we put a login in front of the web app, but instead of wiring real Supabase we built an Authenticator seam with a local SeedAuthenticator stand-in (same trick as faking the DB and the embedder), and the logged-in identity rides in a signed session cookie; the real provider is a deferred stub behind the same interface | sprintsight/web/auth/ (users.py seam, session.py cookie, hashing.py) | flagged 2026-06-22
+- Audience-tuned reporting, now switchable in the UI | the same team's data becomes three different reports (exec, programme, team) shaped for each reader; the drill-in page now shows the report with three links to switch audience, and a cited Sources list makes the "fully-cited" promise visible | sprintsight/web/service.py + sprintsight/web/templates/team.html | flagged 2026-06-22
 
 ## Where we are
 Stage 5 (Accounts / Auth / Admin, Epic SS-8, Story SS-34) — FIRST SLICE DONE, merged to `main` (bdb0680); branch `stage5-auth-accounts` deleted. The project's first auth layer.
@@ -54,6 +55,32 @@ Stage 5 (Accounts / Auth / Admin, Epic SS-8, Story SS-34) — FIRST SLICE DONE, 
   yet), multi-tenant `tenant_id`, and any write/RAID action.
 - DONE: final whole-branch opus review (no Critical/Important; 3 minors fixed), merged to `main`
   (bdb0680); Jira SS-34 In Review -> Done.
+
+Stage 6 (Embedded status-report view, Epic SS-6) — SECOND SLICE DONE on branch `stage6-embedded-report`.
+- Surfaces the existing audience-tuned report writer on the team drill-in page. The drill-in now
+  shows a Status report block below the verdict/evidence, with three links (Exec / Programme / Team)
+  that re-render the same page via a `?audience=` query param (no JavaScript), plus a cited Sources
+  list. Default audience: programme.
+- Writer seam: `service.py` calls a module-level `_writer = compose` (deterministic, offline) with
+  `{team, audience, artifacts}` and folds the report into `TeamDetail` (new fields `audience`,
+  `report_sections`, `report_sources`, `report_insufficient`). The LLM writer stays injectable behind
+  the same seam but is NOT activated in routes this slice, so web tests stay fully offline. Sections
+  are ordered by the audience profile (`AudienceProfile.required_sections`), not writer dict order, so
+  a future writer swap renders correctly. Both `GET /team/{id}` and `GET /api/team/{id}` gained the
+  optional `?audience=` param; unknown value falls back to programme; unknown team still 404s; both
+  routes stay login-gated by Stage 5 auth. HTML + JSON render from the same service output.
+- Echo (thin data): the writer abstains (`insufficient_evidence`), the page shows "Not enough evidence
+  to write a report." No fabrication path; section keys map to headings only via `heading_for`.
+- Eval-first held: served-data tests, not pixels. `tests/web/` asserts, per audience, the served
+  report's grounded facts + section set + profile order, Echo insufficient, the `?audience=` selection
+  and fallback, and an HTML smoke test for the switcher/report block. Full suite 165 passed / 3 skipped,
+  ruff clean. Deterministic watermelon (4/4) + report (4/4) eval gates unchanged.
+- Built via SDD (3 implementer + reviewer task pairs, fresh agents each). Final opus whole-branch
+  review = READY TO MERGE, no Critical/Important; a fix wave cleared the one substantive minor
+  (profile-ordered sections + an order test) plus a sources guard and a redundant noqa.
+- OUT OF SCOPE (deferred): live LLM prose in the browser (seam present, not switched on), rich
+  markdown-to-HTML styling, persistent DB, writes/RAID, remembering the audience across pages.
+- OUTSTANDING: integrate the branch (merge); Jira SS-6 board move.
 
 Stage 6 (Portfolio + Watermelon UI, Epic SS-6) — FIRST SLICE DONE, merged via PR #1 (b9cbe66).
 - The project's first web UI and first HTTP serving layer. A FastAPI app at `sprintsight/web/`:
