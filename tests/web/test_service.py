@@ -1,3 +1,4 @@
+from sprintsight.report.writer import compose
 from sprintsight.web import service
 
 
@@ -114,3 +115,40 @@ def test_team_detail_programme_sections_in_profile_order():
     d = service.team_detail("atlas", "programme")
     headings = [s.heading for s in d.report_sections]
     assert headings == ["Overall status", "Risks", "Dependencies", "Milestones"]
+
+
+def _real_key():
+    return "sk-ant-" + "x" * 60  # 67 chars: passes the shape check
+
+
+def test_llm_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is False
+    assert service._active_writer() is compose
+
+
+def test_llm_enabled_needs_flag_and_key(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is True
+    assert service._active_writer() is not compose
+
+
+def test_llm_flag_on_but_no_key_stays_off(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert service._llm_enabled() is False
+    assert service._active_writer() is compose
+
+
+def test_llm_key_present_but_flag_off_stays_off(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_WEB_LLM", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", _real_key())
+    assert service._llm_enabled() is False
+
+
+def test_llm_rejects_fake_key_shape(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_WEB_LLM", "on")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    assert service._llm_enabled() is False

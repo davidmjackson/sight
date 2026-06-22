@@ -7,12 +7,14 @@ touching the pages. The portfolio judges as-of Sprint 15 with Sprint 14 as conte
 """
 
 import logging
+import os
 from dataclasses import dataclass, field
 
 from sprintsight.evals.fixtures import Artifact, artifacts_for
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.builder import graph_detector
 from sprintsight.report.audience import PROFILES
+from sprintsight.report.llm_writer import make_llm_writer
 from sprintsight.report.render import heading_for
 from sprintsight.report.writer import ReportWriter, compose
 
@@ -41,6 +43,28 @@ _writer: ReportWriter = compose  # seam; LLM writer can be injected here later
 def normalize_audience(value: str) -> str:
     """Coerce any audience value to a valid one; unknown falls back to the default."""
     return value if value in VALID_AUDIENCES else DEFAULT_AUDIENCE
+
+
+_LLM_FLAG = "SPRINTSIGHT_WEB_LLM"
+
+
+def _has_real_key() -> bool:
+    """A real Anthropic key has the sk-ant- shape and real length; blank/fake keys do not."""
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    return key.startswith("sk-ant-") and len(key) > 50
+
+
+def _llm_enabled() -> bool:
+    """True only when the brain is deliberately on AND a real key is present (fail-safe)."""
+    return os.environ.get(_LLM_FLAG) == "on" and _has_real_key()
+
+
+def _active_writer() -> ReportWriter:
+    """The writer this request should use: the LLM writer when the gate is open, else the
+    injected/default seam (compose offline)."""
+    if _llm_enabled():
+        return make_llm_writer()
+    return _writer
 
 
 @dataclass(frozen=True)
@@ -188,7 +212,7 @@ def _report_for(
     team: str, audience: str, arts: dict[str, Artifact]
 ) -> tuple[list[ReportSection], list[EvidenceItem], bool]:
     """Run the writer seam and shape its report for display."""
-    report = _writer({"team": team, "audience": audience, "artifacts": arts})
+    report = _active_writer()({"team": team, "audience": audience, "artifacts": arts})
     if report.insufficient_evidence:
         return [], [], True
     sections = [
