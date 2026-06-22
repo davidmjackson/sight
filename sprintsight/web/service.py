@@ -22,6 +22,7 @@ from sprintsight.report.writer import ReportWriter, compose
 
 TEAMS: list[str] = ["Atlas", "Boreas", "Cygnus", "Draco", "Echo"]
 _SPRINTS = [14, 15]
+CURRENT_SPRINT = _SPRINTS[-1]
 
 _SOURCE_LABELS = {
     "status": "Status report",
@@ -75,6 +76,14 @@ _report_cache: dict[tuple[str, str], tuple[list["ReportSection"], list["Evidence
 def clear_report_cache() -> None:
     """Drop all memoized reports. Used between tests; production clears on restart."""
     _report_cache.clear()
+
+
+@dataclass(frozen=True)
+class PortfolioSummary:
+    teams_tracked: int
+    watermelons: int
+    insufficient: int
+    sprint: int
 
 
 @dataclass(frozen=True)
@@ -137,6 +146,20 @@ def portfolio() -> list[TeamRow]:
             )
         )
     return rows
+
+
+def summarize(rows: list[TeamRow]) -> PortfolioSummary:
+    """Fold the portfolio rows into headline counts for the summary band.
+
+    Pure function of rows already in hand: no I/O, so it cannot disagree with the
+    table rendered beneath it.
+    """
+    return PortfolioSummary(
+        teams_tracked=len(rows),
+        watermelons=sum(1 for r in rows if r.is_watermelon),
+        insufficient=sum(1 for r in rows if not r.has_verdict),
+        sprint=CURRENT_SPRINT,
+    )
 
 
 def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | None:
