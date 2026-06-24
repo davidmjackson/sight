@@ -1,7 +1,14 @@
 # Design: First real connector — Jira (Goal A, "prove the pipe")
 
-Status: APPROVED (brainstorm, 2026-06-24). Stage 7 second slice. Epic SS-5 (UX Polish + Connectors).
-Author: Claude Code + David. Process: superpowers brainstorming.
+Status: BUILT + LIVE-VERIFIED (2026-06-24, branch `stage7-jira-connector`, not yet merged — awaiting David's review).
+Live proof: seeded real board SSSB (6 tickets) via Composio MCP, fetched back, demo ran on real
+data (6 ingested, Atlas evidence cited). Real Composio shape confirmed flat + string description
+(no ADF); `_to_clean` calibrated + pinned by a test. App-side Composio SDK fetch path still deferred.
+Stage 7 second slice. Epic SS-5 (UX Polish + Connectors). Author: Claude Code + David.
+Process: superpowers brainstorming -> writing-plans -> inline TDD build.
+Offline build green (192 passed + 3 skipped, ruff clean). Live Jira/Composio paths run on a
+clean-network day (create sandbox project + Composio key, then seed + live demo). Plan:
+docs/superpowers/plans/2026-06-24-jira-connector.md.
 
 ## Plain-English summary (read this first)
 
