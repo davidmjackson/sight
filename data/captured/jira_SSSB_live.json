@@ -1,0 +1,80 @@
+[
+  {
+    "key": "SSSB-1",
+    "summary": "Wire auth token refresh",
+    "status": "To Do",
+    "team": "Atlas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:40.615+0100",
+    "description": "Refresh tokens before expiry; blocked on upstream auth API. heads up, Draco's auth API still isn't ready, this will bite us.",
+    "comments": []
+  },
+  {
+    "key": "SSSB-4",
+    "summary": "Checkout regression sweep",
+    "status": "To Do",
+    "team": "Atlas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:56.482+0100",
+    "description": "Regression pass on checkout flow. Completed, 3 story points.",
+    "comments": []
+  },
+  {
+    "key": "SSSB-5",
+    "summary": "Carry-over: profile edit bug",
+    "status": "To Do",
+    "team": "Atlas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:56.820+0100",
+    "description": "Carried over from the previous sprint, 5 story points, not yet started.",
+    "comments": []
+  },
+  {
+    "key": "SSSB-2",
+    "summary": "Dashboard spacing polish",
+    "status": "To Do",
+    "team": "Boreas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:56.400+0100",
+    "description": "Tidy dashboard spacing. Completed, 2 story points.",
+    "comments": []
+  },
+  {
+    "key": "SSSB-3",
+    "summary": "Add export to CSV",
+    "status": "To Do",
+    "team": "Boreas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:56.488+0100",
+    "description": "CSV export on reports. Completed, 3 story points.",
+    "comments": []
+  },
+  {
+    "key": "SSSB-6",
+    "summary": "Mitigate vendor latency risk",
+    "status": "To Do",
+    "team": "Boreas",
+    "sprint": 0,
+    "story_points": null,
+    "assignee": null,
+    "reporter": "David Jackson",
+    "updated": "2026-06-24T17:48:58.781+0100",
+    "description": "Risk logged with owner and mitigation. Completed, 2 story points.",
+    "comments": []
+  }
+]

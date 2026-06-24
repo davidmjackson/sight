@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from sprintsight.connect.connector import JiraConnector, RecordedConnector
+from sprintsight.connect.connector import JiraConnector, RecordedConnector, _to_clean
 from sprintsight.connect.normalize import normalize, render_body
 from sprintsight.ingest import ingest_corpus
 from sprintsight.ingest.embedding import HashingEmbedder
@@ -76,6 +76,36 @@ def test_connector_output_ingests_and_is_retrievable():
     assert results, "expected at least one retrieved chunk"
     assert all(r.source_type == "jira" for r in results)
     assert all(r.source_ref.startswith("SSD-") for r in results)
+
+
+# A real Composio JIRA_SEARCH_ISSUES issue, verified live against project SSSB (2026-06-24):
+# flat shape, description as a plain string, status/reporter as dicts, no sprint (kanban board).
+REAL_COMPOSIO_ISSUE = {
+    "key": "SSSB-1",
+    "summary": "Wire auth token refresh",
+    "status": {"category": "To Do", "id": "10069", "name": "To Do"},
+    "labels": ["sprintsight-demo-data", "team:atlas"],
+    "description": "Refresh tokens before expiry; blocked on upstream auth API.",
+    "updated": "2026-06-24T17:48:40.615+0100",
+    "assignee": None,
+    "reporter": {"account_id": "557058:redacted", "display_name": "David Jackson"},
+}
+
+
+def test_to_clean_maps_real_composio_shape():
+    clean = _to_clean(REAL_COMPOSIO_ISSUE)
+    assert clean["key"] == "SSSB-1"
+    assert clean["status"] == "To Do"  # pulled from the status dict's name
+    assert clean["team"] == "Atlas"  # from the team: label
+    assert clean["sprint"] == 0  # kanban board has no sprint
+    assert clean["reporter"] == "David Jackson"  # from the reporter dict's display_name
+    assert clean["assignee"] is None
+    assert clean["description"].startswith("Refresh tokens")  # plain string, not ADF
+    assert clean["comments"] == []
+    # And the cleaned dict round-trips through the pure normalizer.
+    art = normalize(clean)
+    assert art.artifact_id == "jira-SSSB-1"
+    assert art.team == "Atlas"
 
 
 def test_jira_connector_uses_injected_fetcher():

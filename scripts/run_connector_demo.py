@@ -51,15 +51,17 @@ def run_demo(connector: Connector, query: str = DEFAULT_QUERY, team: str | None 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Jira connector A1 proof")
     parser.add_argument("--project", help="live Jira project key (omit for offline recorded mode)")
+    parser.add_argument("--recorded", help="path to a captured sample to replay offline")
     parser.add_argument("--query", default=DEFAULT_QUERY)
     parser.add_argument("--team", default="Atlas", help="scope cited evidence to one team")
     args = parser.parse_args(argv)
 
-    connector: Connector = (
-        JiraConnector(args.project)
-        if args.project
-        else RecordedConnector.from_file(DEFAULT_FIXTURE)
-    )
+    if args.project:
+        connector: Connector = JiraConnector(args.project)
+    elif args.recorded:
+        connector = RecordedConnector.from_file(args.recorded)
+    else:
+        connector = RecordedConnector.from_file(DEFAULT_FIXTURE)
     out = run_demo(connector, query=args.query, team=args.team)
     print("RESULT " + json.dumps(out))
     if out["results"] < 1:
