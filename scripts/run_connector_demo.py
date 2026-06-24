@@ -25,8 +25,12 @@ DEFAULT_FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "
 DEFAULT_QUERY = "auth api dependency not ready"
 
 
-def run_demo(connector: Connector, query: str = DEFAULT_QUERY) -> dict:
-    """Fetch -> ingest -> retrieve. Returns a small machine-readable summary."""
+def run_demo(connector: Connector, query: str = DEFAULT_QUERY, team: str | None = None) -> dict:
+    """Fetch -> ingest -> retrieve. Returns a small machine-readable summary.
+
+    `team` scopes retrieval to one team, so the cited evidence matches the scenario being told
+    (the default narrative cites Atlas, which carries the hidden cross-team dependency).
+    """
     artifacts = connector.fetch()
 
     emb = HashingEmbedder()
@@ -34,7 +38,7 @@ def run_demo(connector: Connector, query: str = DEFAULT_QUERY) -> dict:
     report = ingest_corpus(store, emb, artifacts=artifacts)
 
     retriever = InMemoryRetriever(emb, artifacts=artifacts)
-    results = retriever.search(query, k=5)
+    results = retriever.search(query, k=5, team=team)
 
     return {
         "artifacts": len(artifacts),
@@ -48,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Jira connector A1 proof")
     parser.add_argument("--project", help="live Jira project key (omit for offline recorded mode)")
     parser.add_argument("--query", default=DEFAULT_QUERY)
+    parser.add_argument("--team", default="Atlas", help="scope cited evidence to one team")
     args = parser.parse_args(argv)
 
     connector: Connector = (
@@ -55,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.project
         else RecordedConnector.from_file(DEFAULT_FIXTURE)
     )
-    out = run_demo(connector, query=args.query)
+    out = run_demo(connector, query=args.query, team=args.team)
     print("RESULT " + json.dumps(out))
     if out["results"] < 1:
         print("FAIL: connector returned no retrievable evidence")
