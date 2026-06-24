@@ -1,0 +1,41 @@
+[
+  {
+    "key": "SSD-12",
+    "summary": "Wire auth token refresh",
+    "status": "In Progress",
+    "team": "Atlas",
+    "sprint": 15,
+    "story_points": 5,
+    "assignee": "Dev One",
+    "reporter": "PM Atlas",
+    "updated": "2026-05-20T10:00:00Z",
+    "description": "Refresh tokens before expiry.",
+    "comments": ["heads up, Draco's auth API still isn't ready, this will bite us"]
+  },
+  {
+    "key": "SSD-13",
+    "summary": "Checkout regression sweep",
+    "status": "Done",
+    "team": "Atlas",
+    "sprint": 15,
+    "story_points": 3,
+    "assignee": "Dev Two",
+    "reporter": "PM Atlas",
+    "updated": "2026-05-19T16:00:00Z",
+    "description": "Regression pass on checkout flow.",
+    "comments": []
+  },
+  {
+    "key": "SSD-40",
+    "summary": "Boreas dashboard polish",
+    "status": "Done",
+    "team": "Boreas",
+    "sprint": 15,
+    "story_points": 2,
+    "assignee": "Dev Three",
+    "reporter": "PM Boreas",
+    "updated": "2026-05-19T12:00:00Z",
+    "description": "Tidy dashboard spacing.",
+    "comments": []
+  }
+]
