@@ -1,7 +1,11 @@
 # Design: Stalled-PR signal (amber) for the cross-tool reconciler
 
-Status: DESIGNED (2026-06-25). Not yet built. Stage 7 follow-up to Goal B. Epic SS-5 (UX Polish +
-Connectors). Author: Claude Code + David.
+Status: BUILT (offline) 2026-06-25, branch `stage7-stalled-signal` (not yet merged). Amber tier in
+`sprintsight/crosstool.py` for parked open PRs (default 7 days, configurable, injected `as_of`);
+cross-tool eval now 7/7; full suite 214 passed + 3 skipped, ruff clean. Live is NOT firable on a
+fresh repo (PRs are minutes old, timestamps cannot be backdated); the eval is the proof. Plan:
+docs/superpowers/plans/2026-06-25-stalled-signal.md. Stage 7 follow-up to Goal B. Epic SS-5 (UX
+Polish + Connectors). Author: Claude Code + David.
 Process: superpowers brainstorming -> writing-plans -> eval-first build -> review.
 Builds directly on the cross-tool watermelon (Goal B, merged @ 7c3ab55):
 docs/superpowers/specs/2026-06-25-cross-tool-watermelon-design.md.
