@@ -27,6 +27,14 @@ eval = [
 db = [
   "psycopg[binary]>=3",
 ]
+# Live connector runtime SDKs (imported lazily in sprintsight/connect/; tests never need them).
+# Composio drives the live Jira read; PyGithub drives the live GitHub read. See
+# docs/connectors/live-run.md for the one-step live-run commands. The exact Composio
+# distribution is confirmed at install time (the SDK fetch path is not yet live-run).
+connectors = [
+  "composio",
+  "PyGithub>=2",
+]
 # Stage 6 web app (FastAPI portfolio + watermelon drill-in). httpx is the test client;
 # uvicorn runs the server locally and is not needed for the tests.
 web = [
