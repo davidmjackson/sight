@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Cross-tool signals{% endblock %}
+{% block main %}
+<h1>Cross-tool signals</h1>
+<p class="lede">Jira status versus the actual GitHub activity, per ticket. <a href="/">Back to portfolio</a>.</p>
+
+<div class="summary-band">
+  <div class="kpi{% if page.summary.watermelons %} kpi-alert{% endif %}">
+    <span class="num">{{ page.summary.watermelons }}</span>
+    <span class="label">Watermelons flagged</span>
+  </div>
+  <div class="kpi">
+    <span class="num">{{ page.summary.stalled }}</span>
+    <span class="label">Stalled PRs</span>
+  </div>
+  <div class="kpi">
+    <span class="num">{{ page.summary.checked }}</span>
+    <span class="label">Tickets checked</span>
+  </div>
+</div>
+
+<table class="portfolio">
+  <thead>
+    <tr><th>Ticket</th><th>Team</th><th>Reported</th><th>Actual</th><th>Flag</th><th>Evidence</th></tr>
+  </thead>
+  <tbody>
+  {% for row in page.rows %}
+    <tr class="{{ 'watermelon' if row.classification == 'watermelon' else '' }}">
+      <td>{{ row.key }}</td>
+      <td>{{ row.team }}</td>
+      <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>
+      <td><span class="rag rag-{{ row.actual_status }}">{{ row.actual_status }}</span></td>
+      <td>
+        {% if row.classification == 'watermelon' %}
+          <span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
+        {% elif row.classification == 'stalled' %}
+          <span class="badge badge-stalled" title="Open PR has gone quiet">stalled</span>
+        {% else %}
+          <span class="badge badge-ok">consistent</span>
+        {% endif %}
+      </td>
+      <td class="evidence">{{ row.jira_citation }}<br>{{ row.github_citation }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

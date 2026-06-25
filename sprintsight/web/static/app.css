@@ -105,6 +105,7 @@ tr.watermelon { background: var(--red-tint); }
 .badge-watermelon { background: #fde8e8; color: var(--red-ink); }
 .badge-ok { background: var(--accent-tint); color: var(--accent-ink); }
 .badge-muted { background: #f2f4f7; color: var(--muted); }
+.badge-stalled { background: #fdf3e3; color: #8a5a00; }
 
 /* team drill-in */
 .back { font-size: 13px; color: var(--accent); text-decoration: none; }
