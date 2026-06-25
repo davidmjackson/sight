@@ -27,9 +27,11 @@ def _parse_ts(ts: str | None) -> datetime | None:
     if not ts:
         return None
     try:
-        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except ValueError:
         return None
+    # Coerce a naive timestamp to UTC so freshness math is always aware-safe.
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
 
 
 def _stalled(
@@ -40,7 +42,8 @@ def _stalled(
     now = _parse_ts(as_of)
     if activity is None or now is None:
         return None
-    open_prs = [p for p in activity.prs if not p.merged]
+    # "Stalled" means a genuinely OPEN PR went quiet; a closed-unmerged PR is abandoned, not parked.
+    open_prs = [p for p in activity.prs if p.state == "open"]
     if not open_prs:
         return None
     floor = datetime.min.replace(tzinfo=UTC)

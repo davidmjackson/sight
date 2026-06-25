@@ -92,6 +92,19 @@ def test_no_as_of_skips_staleness_backcompat():
     assert v.actual_status == "green"
 
 
+def test_naive_timestamp_does_not_crash():
+    # A timezone-less as_of must be coerced to UTC, not raise (one bad ticket can't kill the run).
+    v = _vt("In Progress", _open_pr_act(20, "2026-06-15T00:00:00Z"), "2026-06-25T00:00:00")
+    assert v.actual_status == "amber"
+
+
+def test_closed_unmerged_pr_is_not_stalled():
+    # A closed-but-unmerged PR is abandoned, not parked; it must not be flagged amber.
+    pr = PR(9, "closed", False, "t", "u", "2026-01-01T00:00:00Z")
+    act = Activity("SSSB-1", False, [pr], 0, None)
+    assert _vt("In Progress", act, AS_OF).actual_status == "green"
+
+
 def test_run_cross_tool_threads_as_of_for_stalled():
     tickets = {"SSSB-7": {"key": "SSSB-7", "status": "In Progress", "team": "Atlas"}}
     act = {"SSSB-7": _open_pr_act(20, "2026-06-15T00:00:00Z", key="SSSB-7")}
