@@ -92,6 +92,14 @@ def test_no_as_of_skips_staleness_backcompat():
     assert v.actual_status == "green"
 
 
+def test_run_cross_tool_threads_as_of_for_stalled():
+    tickets = {"SSSB-7": {"key": "SSSB-7", "status": "In Progress", "team": "Atlas"}}
+    act = {"SSSB-7": _open_pr_act(20, "2026-06-15T00:00:00Z", key="SSSB-7")}
+    verdicts = run_cross_tool(tickets, act, as_of="2026-06-25T00:00:00+00:00")
+    assert verdicts[0].actual_status == "amber"
+    assert not verdicts[0].is_watermelon
+
+
 def test_run_cross_tool_flags_only_watermelons():
     tickets = {
         "SSSB-1": {"key": "SSSB-1", "status": "In Progress", "team": "Atlas"},

@@ -3,8 +3,9 @@
 Pure, recommend-only. Compares one Jira ticket's reported status against its GitHub Activity
 and emits the existing SS-1.4 `Verdict`. The red rule (v1): a ticket claiming progress with no
 linked work, or a Done ticket whose PR is still open/unmerged, is "actually red" while it reads
-as healthy in Jira, i.e. a watermelon. Colours are green/red only; amber is reserved for the
-deferred staleness signal. Never writes to GitHub or Jira.
+as healthy in Jira, i.e. a watermelon. A third colour, amber, flags a parked open PR (no activity
+for `stale_after_days`, measured against an injected `as_of`): a warning, not a watermelon.
+Never writes to GitHub or Jira.
 """
 
 from datetime import UTC, datetime
@@ -120,9 +121,16 @@ def reconcile(inputs: dict[str, Any]) -> Verdict:
 def run_cross_tool(
     tickets: dict[str, dict[str, Any]],
     activity: dict[str, Activity],
+    as_of: str | None = None,
+    stale_after_days: int = 7,
 ) -> list[Verdict]:
     """Reconcile every Jira ticket against its GitHub activity (matched by key)."""
     return [
-        reconcile({"ticket": ticket, "activity": activity.get(key)})
+        reconcile({
+            "ticket": ticket,
+            "activity": activity.get(key),
+            "as_of": as_of,
+            "stale_after_days": stale_after_days,
+        })
         for key, ticket in tickets.items()
     ]
