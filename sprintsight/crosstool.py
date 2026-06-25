@@ -68,3 +68,14 @@ def reconcile(inputs: dict[str, Any]) -> Verdict:
         signals=[gh],
         explanation=explanation,
     )
+
+
+def run_cross_tool(
+    tickets: dict[str, dict[str, Any]],
+    activity: dict[str, Activity],
+) -> list[Verdict]:
+    """Reconcile every Jira ticket against its GitHub activity (matched by key)."""
+    return [
+        reconcile({"ticket": ticket, "activity": activity.get(key)})
+        for key, ticket in tickets.items()
+    ]

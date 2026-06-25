@@ -1,7 +1,7 @@
 """Goal B reconciler: per-ticket status-vs-activity watermelon logic."""
 
 from sprintsight.connect.github import PR, Activity
-from sprintsight.crosstool import reconcile
+from sprintsight.crosstool import reconcile, run_cross_tool
 
 
 def _v(status, activity, key="SSSB-1", team="Atlas"):
@@ -41,3 +41,16 @@ def test_done_with_merged_pr_is_clean():
 def test_backlog_ticket_is_never_a_watermelon():
     v = _v("To Do", None)
     assert v.is_watermelon is False
+
+
+def test_run_cross_tool_flags_only_watermelons():
+    tickets = {
+        "SSSB-1": {"key": "SSSB-1", "status": "In Progress", "team": "Atlas"},
+        "SSSB-2": {"key": "SSSB-2", "status": "Done", "team": "Atlas"},
+    }
+    act = {"SSSB-2": Activity("SSSB-2", True, [PR(8, "closed", True, "t", "u")], 1, None)}
+    verdicts = run_cross_tool(tickets, act)
+    flagged = [v for v in verdicts if v.is_watermelon]
+    assert [v.team for v in verdicts] == ["Atlas", "Atlas"]  # one verdict per ticket
+    assert len(flagged) == 1  # SSSB-1 (no work); SSSB-2 has a merged PR
+    assert "jira-SSSB-1" in flagged[0].evidence
