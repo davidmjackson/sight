@@ -25,7 +25,7 @@
   </thead>
   <tbody>
   {% for row in page.rows %}
-    <tr class="{{ 'watermelon' if row.classification == 'watermelon' else '' }}">
+    <tr class="{{ 'watermelon' if row.classification == 'watermelon' else '' }}" title="{{ row.headline }}">
       <td>{{ row.key }}</td>
       <td>{{ row.team }}</td>
       <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>

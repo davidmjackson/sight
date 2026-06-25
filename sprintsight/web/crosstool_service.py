@@ -96,7 +96,7 @@ def crosstool_view(as_of: str = CROSSTOOL_AS_OF) -> CrossToolPage:
     activity = RecordedGitHubConnector.from_file(_GITHUB_FIXTURE).fetch_activity()
     rows: list[CrossToolRow] = []
     for t in tickets:
-        key, status, team = t["key"], t["status"], t.get("team", "")
+        key, status, team = t["key"], t.get("status", ""), t.get("team", "")
         verdict = reconcile(
             {"ticket": t, "activity": activity.get(key), "as_of": as_of}
         )
