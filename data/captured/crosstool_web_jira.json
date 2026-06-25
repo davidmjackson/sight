@@ -1,0 +1,6 @@
+[
+  {"key": "SSSB-1", "status": "In Progress", "team": "Atlas"},
+  {"key": "SSSB-2", "status": "Done", "team": "Atlas"},
+  {"key": "SSSB-3", "status": "Done", "team": "Boreas"},
+  {"key": "SSSB-7", "status": "In Progress", "team": "Cygnus"}
+]
