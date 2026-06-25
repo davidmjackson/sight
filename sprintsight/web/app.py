@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from sprintsight.web import service
+from sprintsight.web import crosstool_service, service
 from sprintsight.web.auth.session import (
     is_dev,
     login_session,
@@ -75,6 +75,20 @@ def create_app() -> FastAPI:
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
         return asdict(detail)
+
+    @app.get("/api/crosstool")
+    def api_crosstool(user: User = Depends(require_api_user)) -> dict:  # noqa: B008
+        return asdict(crosstool_service.crosstool_view())
+
+    @app.get("/crosstool", response_class=HTMLResponse)
+    def page_crosstool(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if user is None:
+            return RedirectResponse("/login", status_code=303)
+        page = crosstool_service.crosstool_view()
+        return _TEMPLATES.TemplateResponse(
+            request, "crosstool.html", {"page": page, "user": user}
+        )
 
     @app.get("/", response_class=HTMLResponse)
     def page_portfolio(request: Request) -> HTMLResponse:

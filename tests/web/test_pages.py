@@ -71,3 +71,29 @@ def test_admin_accounts_uses_shell(client):
     html = client.get("/admin/accounts").text
     assert "app-header" in html
     assert "Accounts" in html
+
+
+def test_crosstool_page_renders_summary_and_flags(client):
+    html = client.get("/crosstool").text
+    assert "summary-band" in html
+    assert "SSSB-1" in html                     # a watermelon ticket
+    assert "SSSB-7" in html                     # the stalled ticket
+    assert "no activity" in html                # the stalled citation
+    assert "Jira SSSB-1" in html                # both tools cited
+    assert "GitHub:" in html
+
+
+def test_crosstool_api_returns_counts(client):
+    body = client.get("/api/crosstool").json()
+    assert body["summary"]["watermelons"] == 2
+    assert body["summary"]["stalled"] == 1
+    assert len(body["rows"]) == 4
+
+
+def test_crosstool_requires_login(anon_client):
+    resp = anon_client.get("/crosstool", follow_redirects=False)
+    assert resp.status_code == 303              # redirected to /login
+
+
+def test_portfolio_links_to_crosstool(client):
+    assert "/crosstool" in client.get("/").text
