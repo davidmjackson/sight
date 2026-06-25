@@ -1,7 +1,9 @@
 # Design: Second connector + live cross-tool watermelon (Goal B)
 
-Status: DESIGNED (2026-06-25). Not yet built. Stage 7 third slice. Epic SS-5 (UX Polish +
-Connectors). Author: Claude Code + David.
+Status: BUILT (offline), live-verify pending (2026-06-25, branch `stage7-cross-tool-watermelon`,
+not yet merged). GitHub connector + pure reconciler + 5/5 cross-tool eval; full suite 205 passed
++ 3 skipped, ruff clean. Plan: docs/superpowers/plans/2026-06-25-cross-tool-watermelon.md.
+Stage 7 third slice. Epic SS-5 (UX Polish + Connectors). Author: Claude Code + David.
 Process: superpowers brainstorming -> writing-plans -> eval-first build -> review -> live-verify.
 Builds directly on the Jira connector (Goal A, merged @ d5945dc):
 docs/superpowers/specs/2026-06-24-jira-connector-design.md.
