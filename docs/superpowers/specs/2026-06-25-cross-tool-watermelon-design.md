@@ -1,8 +1,16 @@
 # Design: Second connector + live cross-tool watermelon (Goal B)
 
-Status: BUILT (offline), live-verify pending (2026-06-25, branch `stage7-cross-tool-watermelon`,
-not yet merged). GitHub connector + pure reconciler + 5/5 cross-tool eval; full suite 205 passed
-+ 3 skipped, ruff clean. Plan: docs/superpowers/plans/2026-06-25-cross-tool-watermelon.md.
+Status: BUILT + LIVE-VERIFIED (2026-06-25, branch `stage7-cross-tool-watermelon`, not yet
+merged). GitHub connector + pure reconciler + 5/5 cross-tool eval; full suite 207 passed + 3
+skipped, ruff clean. LIVE PROOF: seeded a real public repo davidmjackson/sprintsight-sandbox
+(branches/PRs referencing real SSSB keys) and transitioned SSSB-1 -> In Progress, SSSB-2/3 ->
+Done on the live SSSB board via Composio; read both tools back and the demo flagged exactly 2
+cross-tool watermelons citing both tools (SSSB-1 no-ref, SSSB-2 PR#1 open-unmerged), leaving
+SSSB-3 (Done + merged PR) clean. Real-shape calibration: GitHub's PR *list* reports
+merged=false even for merged PRs, so fetch_github derives merged from merged_at.
+Captures: data/captured/github_sandbox_live.json + jira_SSSB_live.json. App-side PyGithub
+fetch_github path still unrun (needs PyGithub + GITHUB_TOKEN), like the Composio SDK path.
+Plan: docs/superpowers/plans/2026-06-25-cross-tool-watermelon.md.
 Stage 7 third slice. Epic SS-5 (UX Polish + Connectors). Author: Claude Code + David.
 Process: superpowers brainstorming -> writing-plans -> eval-first build -> review -> live-verify.
 Builds directly on the Jira connector (Goal A, merged @ d5945dc):

@@ -121,7 +121,11 @@ def fetch_github(repo: str) -> list[dict[str, Any]]:
                 "number": pr.number,
                 "title": pr.title,
                 "state": pr.state,
-                "merged": pr.merged,
+                # Derive merged from merged_at: the GitHub *list* shape reports merged=false
+                # even for merged PRs (only merged_at is set). Verified live on
+                # davidmjackson/sprintsight-sandbox, 2026-06-25. This is the single home for
+                # that mapping, mirroring the Jira `_to_clean` shape calibration.
+                "merged": pr.merged_at is not None,
                 "url": pr.html_url,
             }
         )
