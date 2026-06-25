@@ -7,6 +7,7 @@ as healthy in Jira, i.e. a watermelon. Colours are green/red only; amber is rese
 deferred staleness signal. Never writes to GitHub or Jira.
 """
 
+from datetime import UTC, datetime
 from typing import Any
 
 from sprintsight.connect.github import Activity
@@ -21,6 +22,41 @@ def _has_work(activity: Activity | None) -> bool:
     )
 
 
+def _parse_ts(ts: str | None) -> datetime | None:
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _stalled(
+    activity: Activity | None, as_of: str | None, threshold_days: int
+) -> tuple[int, int] | None:
+    """If the newest open PR (and any commits) have been quiet >= threshold_days as of
+    `as_of`, return (pr_number, age_days); else None. Pure; None as_of skips the check."""
+    now = _parse_ts(as_of)
+    if activity is None or now is None:
+        return None
+    open_prs = [p for p in activity.prs if not p.merged]
+    if not open_prs:
+        return None
+    floor = datetime.min.replace(tzinfo=UTC)
+    newest_pr = max(open_prs, key=lambda p: _parse_ts(p.updated_at) or floor)
+    stamps = [
+        t
+        for t in (_parse_ts(newest_pr.updated_at), _parse_ts(activity.last_commit_at))
+        if t is not None
+    ]
+    if not stamps:
+        return None
+    age_days = (now - max(stamps)).days
+    if age_days >= threshold_days:
+        return newest_pr.number, age_days
+    return None
+
+
 def reconcile(inputs: dict[str, Any]) -> Verdict:
     """`inputs = {"ticket": {key,status,team}, "activity": Activity | None}` -> Verdict."""
     ticket = inputs["ticket"]
@@ -28,6 +64,8 @@ def reconcile(inputs: dict[str, Any]) -> Verdict:
     key = ticket["key"]
     team = ticket.get("team", "")
     status = str(ticket.get("status", "")).strip().lower()
+    as_of = inputs.get("as_of")
+    stale_after_days = int(inputs.get("stale_after_days", 7))
 
     reported = "green" if status in _PROGRESS else "n/a"
 
@@ -45,15 +83,21 @@ def reconcile(inputs: dict[str, Any]) -> Verdict:
         else:
             actual, gh = "red", f"github:no-ref:{key}"
     elif status in {"in progress", "in review"}:
-        if _has_work(activity):
-            actual, gh = "green", f"github:active:{key}"
-        else:
+        if not _has_work(activity):
             actual, gh = "red", f"github:no-ref:{key}"
+        else:
+            stalled = _stalled(activity, as_of, stale_after_days)
+            if stalled is not None:
+                pr_number, age_days = stalled
+                actual, gh = "amber", f"github:PR#{pr_number}:stalled-{age_days}d"
+            else:
+                actual, gh = "green", f"github:active:{key}"
     else:  # To Do / Backlog: not claiming progress, never a watermelon.
         actual, gh = "green", f"github:n/a:{key}"
 
     is_watermelon = reported == "green" and actual == "red"
-    evidence = [f"jira-{key}", gh] if is_watermelon else [f"jira-{key}"]
+    cite_github = is_watermelon or actual == "amber"
+    evidence = [f"jira-{key}", gh] if cite_github else [f"jira-{key}"]
 
     verb = (
         "looks healthier than its code activity"
