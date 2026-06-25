@@ -47,3 +47,77 @@ def _github_citation(token: str) -> str:
         if detail == "open-unmerged":
             return f"GitHub: PR #{number} is open and unmerged"
     return f"GitHub: {token}"
+
+
+@dataclass(frozen=True)
+class CrossToolSummary:
+    checked: int
+    watermelons: int
+    stalled: int
+    as_of: str
+
+
+@dataclass(frozen=True)
+class CrossToolRow:
+    key: str
+    team: str
+    reported_status: str
+    actual_status: str
+    classification: str  # "watermelon" | "stalled" | "clean"
+    headline: str
+    jira_citation: str
+    github_citation: str
+
+
+@dataclass(frozen=True)
+class CrossToolPage:
+    summary: CrossToolSummary
+    rows: list[CrossToolRow]
+
+
+_SORT_RANK = {"watermelon": 0, "stalled": 1, "clean": 2}
+
+
+def _classification(verdict: Verdict) -> str:
+    if verdict.is_watermelon:
+        return "watermelon"
+    if verdict.actual_status == "amber":
+        return "stalled"
+    return "clean"
+
+
+def crosstool_view(as_of: str = CROSSTOOL_AS_OF) -> CrossToolPage:
+    """Reconcile every fixture ticket against its GitHub activity and shape the page.
+
+    Pure given the fixtures and `as_of`: the web layer pairs each ticket key with its verdict
+    here (a `Verdict` carries no key), so every row keeps its citation.
+    """
+    tickets = json.loads(_JIRA_FIXTURE.read_text(encoding="utf-8"))
+    activity = RecordedGitHubConnector.from_file(_GITHUB_FIXTURE).fetch_activity()
+    rows: list[CrossToolRow] = []
+    for t in tickets:
+        key, status, team = t["key"], t["status"], t.get("team", "")
+        verdict = reconcile(
+            {"ticket": t, "activity": activity.get(key), "as_of": as_of}
+        )
+        signal = verdict.signals[0] if verdict.signals else ""
+        rows.append(
+            CrossToolRow(
+                key=key,
+                team=team,
+                reported_status=verdict.reported_status,
+                actual_status=verdict.actual_status,
+                classification=_classification(verdict),
+                headline=verdict.explanation,
+                jira_citation=_jira_citation(key, status),
+                github_citation=_github_citation(signal),
+            )
+        )
+    rows.sort(key=lambda r: (_SORT_RANK[r.classification], r.key))
+    summary = CrossToolSummary(
+        checked=len(rows),
+        watermelons=sum(1 for r in rows if r.classification == "watermelon"),
+        stalled=sum(1 for r in rows if r.classification == "stalled"),
+        as_of=as_of,
+    )
+    return CrossToolPage(summary=summary, rows=rows)
