@@ -1,0 +1,5 @@
+[
+  {"key": "SSSB-1", "summary": "Wire auth token refresh", "status": "In Progress", "team": "Atlas", "sprint": 0, "story_points": 5, "assignee": "Dev One", "reporter": "PM Atlas", "updated": "2026-06-24T10:00:00Z", "description": "Refresh tokens before expiry.", "comments": []},
+  {"key": "SSSB-2", "summary": "Login page", "status": "Done", "team": "Atlas", "sprint": 0, "story_points": 3, "assignee": "Dev Two", "reporter": "PM Atlas", "updated": "2026-06-24T11:00:00Z", "description": "Build the login screen.", "comments": []},
+  {"key": "SSSB-3", "summary": "Portfolio dashboard", "status": "Done", "team": "Boreas", "sprint": 0, "story_points": 8, "assignee": "Dev Three", "reporter": "PM Boreas", "updated": "2026-06-24T12:00:00Z", "description": "Ship the dashboard.", "comments": []}
+]

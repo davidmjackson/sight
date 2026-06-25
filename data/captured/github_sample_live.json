@@ -1,0 +1,6 @@
+[
+  {"type": "branch", "name": "feature/SSSB-2-auth-refresh"},
+  {"type": "pr", "number": 12, "title": "SSSB-2 auth refresh", "state": "open", "merged": false, "url": "https://gh/pr/12"},
+  {"type": "pr", "number": 8, "title": "SSSB-3 dashboard", "state": "closed", "merged": true, "url": "https://gh/pr/8"},
+  {"type": "commit", "message": "SSSB-3 ship dashboard", "committed_at": "2026-06-21T10:00:00Z"}
+]
