@@ -24,6 +24,14 @@ def test_done_with_open_pr_is_watermelon():
     assert "github:PR#12:open-unmerged" in v.evidence
 
 
+def test_done_with_work_but_no_pr_is_watermelon_with_clear_token():
+    act = Activity("SSSB-1", True, [], 4, None)  # branch + commits, never a PR
+    v = _v("Done", act)
+    assert v.is_watermelon is True
+    assert v.actual_status == "red"
+    assert "github:no-merged-pr:SSSB-1" in v.evidence
+
+
 def test_in_progress_with_work_is_clean():
     act = Activity("SSSB-1", True, [PR(5, "open", False, "t", "u")], 3, None)
     v = _v("In Progress", act)

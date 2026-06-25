@@ -13,8 +13,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-# A Jira key like SSSB-4: uppercase project code, dash, number.
-KEY_RE = re.compile(r"[A-Z][A-Z0-9]+-\d+")
+# A Jira key like SSSB-4: uppercase project code, dash, number. Word-bounded so an
+# embedded run like "xSSSB-4y" does not false-join to a ticket.
+KEY_RE = re.compile(r"\b[A-Z][A-Z0-9]+-\d+\b")
 
 
 @dataclass(frozen=True)

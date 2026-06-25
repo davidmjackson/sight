@@ -39,6 +39,9 @@ def reconcile(inputs: dict[str, Any]) -> Verdict:
             actual, gh = "green", f"github:active:{key}"
         elif open_prs:
             actual, gh = "red", f"github:PR#{open_prs[0].number}:open-unmerged"
+        elif _has_work(activity):
+            # Branch/commits exist but nothing merged: real work, not shipped.
+            actual, gh = "red", f"github:no-merged-pr:{key}"
         else:
             actual, gh = "red", f"github:no-ref:{key}"
     elif status in {"in progress", "in review"}:

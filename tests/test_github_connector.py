@@ -39,6 +39,11 @@ def test_index_ignores_text_without_a_key():
     assert index_activity([{"type": "commit", "message": "no ticket here"}]) == {}
 
 
+def test_index_does_not_false_join_on_embedded_run():
+    # A key glued inside a larger token must not match (word-bounded KEY_RE).
+    assert index_activity([{"type": "commit", "message": "xSSSB-4y not a real ref"}]) == {}
+
+
 def test_recorded_connector_indexes_from_file(tmp_path):
     sample = tmp_path / "gh.json"
     sample.write_text(

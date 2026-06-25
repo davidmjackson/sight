@@ -4,8 +4,11 @@ Offline by default via captured replay. Live needs a Composio key (Jira) and GIT
 
 Usage:
   python scripts/run_cross_tool.py --recorded data/captured/github_sample_live.json \
-      --jira-recorded tests/fixtures/jira_sample.json
+      --jira-recorded data/captured/jira_demo_live.json
   python scripts/run_cross_tool.py --repo owner/name --project SSSB   # live
+
+The two captured fixtures share SSSB-* keys so the offline demo shows discrimination:
+SSSB-1 (In Progress, no work) and SSSB-2 (Done, open PR) flag; SSSB-3 (Done, merged PR) does not.
 """
 
 import argparse
