@@ -16,6 +16,8 @@ from sprintsight.evals.watermelon import Verdict
 Reconciler = Callable[[dict[str, Any]], Verdict]
 Check = Callable[[Verdict], Assertion]
 
+AS_OF = "2026-06-25T00:00:00+00:00"
+
 
 def _act(key: str, **kw: Any) -> Activity:
     return Activity(
@@ -78,6 +80,32 @@ CASES: list[dict[str, Any]] = [
         "actual": "green",
         "required_evidence": set(),
     },
+    {
+        "name": "case6",
+        "ticket": {"key": "SSSB-7", "status": "In Progress", "team": "Atlas"},
+        "activity": _act(
+            "SSSB-7",
+            prs=[PR(number=20, state="open", merged=False, title="SSSB-7",
+                    url="u", updated_at="2026-06-15T00:00:00Z")],
+        ),
+        "as_of": AS_OF,
+        "is_watermelon": False,
+        "actual": "amber",
+        "required_evidence": {"jira-SSSB-7", "github:PR#20:stalled-10d"},
+    },
+    {
+        "name": "case7",
+        "ticket": {"key": "SSSB-8", "status": "In Progress", "team": "Boreas"},
+        "activity": _act(
+            "SSSB-8",
+            prs=[PR(number=21, state="open", merged=False, title="SSSB-8",
+                    url="u", updated_at="2026-06-24T00:00:00Z")],
+        ),
+        "as_of": AS_OF,
+        "is_watermelon": False,
+        "actual": "green",
+        "required_evidence": set(),
+    },
 ]
 
 
@@ -109,10 +137,13 @@ def _evidence(required: set[str]) -> Check:
 def build_cases() -> list[Case]:
     cases: list[Case] = []
     for rec in CASES:
+        inputs = {"ticket": rec["ticket"], "activity": rec["activity"]}
+        if "as_of" in rec:
+            inputs["as_of"] = rec["as_of"]
         cases.append(
             Case(
                 name=rec["name"],
-                inputs={"ticket": rec["ticket"], "activity": rec["activity"]},
+                inputs=inputs,
                 assertions=[
                     _classification(rec["is_watermelon"], rec["actual"]),
                     _evidence(rec["required_evidence"]),

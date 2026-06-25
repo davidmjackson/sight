@@ -25,6 +25,7 @@ class PR:
     merged: bool
     title: str
     url: str
+    updated_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ def index_activity(items: list[dict[str, Any]]) -> dict[str, Activity]:
                         merged=bool(it.get("merged", False)),
                         title=str(it.get("title", "")),
                         url=str(it.get("url", "")),
+                        updated_at=it.get("updated_at"),
                     )
                 )
             elif kind == "commit":
@@ -127,6 +129,7 @@ def fetch_github(repo: str) -> list[dict[str, Any]]:
                 # that mapping, mirroring the Jira `_to_clean` shape calibration.
                 "merged": pr.merged_at is not None,
                 "url": pr.html_url,
+                "updated_at": pr.updated_at.isoformat() if pr.updated_at else None,
             }
         )
     for c in r.get_commits():

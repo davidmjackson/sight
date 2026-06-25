@@ -13,6 +13,7 @@ SSSB-1 (In Progress, no work) and SSSB-2 (Done, open PR) flag; SSSB-3 (Done, mer
 
 import argparse
 import json
+from datetime import UTC, datetime
 
 from sprintsight.connect.connector import JiraConnector, RecordedConnector
 from sprintsight.connect.github import GitHubConnector, RecordedGitHubConnector
@@ -53,16 +54,21 @@ def main() -> None:
     )
 
     tickets = _tickets_from_artifacts(jira.fetch())
-    verdicts = run_cross_tool(tickets, gh.fetch_activity())
+    as_of = datetime.now(UTC).isoformat()
+    verdicts = run_cross_tool(tickets, gh.fetch_activity(), as_of=as_of)
 
-    flagged = [v for v in verdicts if v.is_watermelon]
-    print(f"{len(verdicts)} tickets checked, {len(flagged)} cross-tool watermelon(s):")
-    for v in flagged:
-        print(
-            json.dumps(
-                {"team": v.team, "evidence": v.evidence, "why": v.explanation}, indent=2
-            )
-        )
+    watermelons = [v for v in verdicts if v.is_watermelon]
+    stalled = [v for v in verdicts if v.actual_status == "amber"]
+    print(
+        f"{len(verdicts)} tickets checked, {len(watermelons)} watermelon(s), "
+        f"{len(stalled)} stalled:"
+    )
+    for v in watermelons:
+        print(json.dumps(
+            {"watermelon": v.team, "evidence": v.evidence, "why": v.explanation}, indent=2))
+    for v in stalled:
+        print(json.dumps(
+            {"stalled": v.team, "evidence": v.evidence, "why": v.explanation}, indent=2))
 
 
 if __name__ == "__main__":

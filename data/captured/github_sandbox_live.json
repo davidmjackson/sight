@@ -2,8 +2,8 @@
   {"type": "branch", "name": "feature/SSSB-2-dashboard-spacing"},
   {"type": "branch", "name": "feature/SSSB-3-csv-export"},
   {"type": "branch", "name": "main"},
-  {"type": "pr", "number": 1, "title": "SSSB-2 dashboard spacing polish", "state": "open", "merged": false, "url": "https://github.com/davidmjackson/sprintsight-sandbox/pull/1"},
-  {"type": "pr", "number": 2, "title": "SSSB-3 add export to CSV", "state": "closed", "merged": true, "url": "https://github.com/davidmjackson/sprintsight-sandbox/pull/2"},
+  {"type": "pr", "number": 1, "title": "SSSB-2 dashboard spacing polish", "state": "open", "merged": false, "url": "https://github.com/davidmjackson/sprintsight-sandbox/pull/1", "updated_at": "2026-06-25T06:37:19Z"},
+  {"type": "pr", "number": 2, "title": "SSSB-3 add export to CSV", "state": "closed", "merged": true, "url": "https://github.com/davidmjackson/sprintsight-sandbox/pull/2", "updated_at": "2026-06-25T06:37:26Z"},
   {"type": "commit", "message": "SSSB-3 add CSV export on reports (#2)", "committed_at": "2026-06-25T06:37:25Z"},
   {"type": "commit", "message": "chore: initialize sandbox with scenario README", "committed_at": "2026-06-25T06:36:51Z"}
 ]

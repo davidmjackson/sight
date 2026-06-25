@@ -56,6 +56,20 @@ def test_recorded_connector_indexes_from_file(tmp_path):
     assert idx["SSSB-2"].prs[0].merged is True
 
 
+def test_index_carries_pr_updated_at():
+    items = [{"type": "pr", "number": 9, "title": "SSSB-8 wip", "state": "open",
+              "merged": False, "url": "u", "updated_at": "2026-06-15T00:00:00Z"}]
+    idx = index_activity(items)
+    assert idx["SSSB-8"].prs[0].updated_at == "2026-06-15T00:00:00Z"
+
+
+def test_pr_updated_at_defaults_to_none():
+    items = [{"type": "pr", "number": 9, "title": "SSSB-8", "state": "open",
+              "merged": False, "url": "u"}]
+    idx = index_activity(items)
+    assert idx["SSSB-8"].prs[0].updated_at is None
+
+
 def test_github_connector_uses_injected_fetcher():
     fake_items = [{"type": "branch", "name": "feat/SSSB-5-thing"}]
     conn = GitHubConnector("owner/repo", fetcher=lambda repo: fake_items)

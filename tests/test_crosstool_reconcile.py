@@ -51,6 +51,68 @@ def test_backlog_ticket_is_never_a_watermelon():
     assert v.is_watermelon is False
 
 
+AS_OF = "2026-06-25T00:00:00+00:00"
+
+
+def _vt(status, activity, as_of=None, key="SSSB-1", team="Atlas"):
+    return reconcile({
+        "ticket": {"key": key, "status": status, "team": team},
+        "activity": activity,
+        "as_of": as_of,
+    })
+
+
+def _open_pr_act(number, updated_at, key="SSSB-1"):
+    return Activity(key, False, [PR(number, "open", False, "t", "u", updated_at)], 0, None)
+
+
+def test_in_progress_parked_pr_is_amber_not_watermelon():
+    v = _vt("In Progress", _open_pr_act(20, "2026-06-15T00:00:00Z"), AS_OF)
+    assert v.actual_status == "amber"
+    assert v.is_watermelon is False
+    assert "github:PR#20:stalled-10d" in v.evidence
+    assert "jira-SSSB-1" in v.evidence
+
+
+def test_in_progress_fresh_pr_is_green():
+    v = _vt("In Progress", _open_pr_act(21, "2026-06-24T00:00:00Z"), AS_OF)
+    assert v.actual_status == "green"
+    assert v.is_watermelon is False
+
+
+def test_stalled_boundary_is_inclusive_at_threshold():
+    at7 = _vt("In Progress", _open_pr_act(1, "2026-06-18T00:00:00Z"), AS_OF)  # exactly 7 days
+    at6 = _vt("In Progress", _open_pr_act(1, "2026-06-19T00:00:00Z"), AS_OF)  # 6 days
+    assert at7.actual_status == "amber"
+    assert at6.actual_status == "green"
+
+
+def test_no_as_of_skips_staleness_backcompat():
+    v = _vt("In Progress", _open_pr_act(20, "2026-01-01T00:00:00Z"), None)
+    assert v.actual_status == "green"
+
+
+def test_naive_timestamp_does_not_crash():
+    # A timezone-less as_of must be coerced to UTC, not raise (one bad ticket can't kill the run).
+    v = _vt("In Progress", _open_pr_act(20, "2026-06-15T00:00:00Z"), "2026-06-25T00:00:00")
+    assert v.actual_status == "amber"
+
+
+def test_closed_unmerged_pr_is_not_stalled():
+    # A closed-but-unmerged PR is abandoned, not parked; it must not be flagged amber.
+    pr = PR(9, "closed", False, "t", "u", "2026-01-01T00:00:00Z")
+    act = Activity("SSSB-1", False, [pr], 0, None)
+    assert _vt("In Progress", act, AS_OF).actual_status == "green"
+
+
+def test_run_cross_tool_threads_as_of_for_stalled():
+    tickets = {"SSSB-7": {"key": "SSSB-7", "status": "In Progress", "team": "Atlas"}}
+    act = {"SSSB-7": _open_pr_act(20, "2026-06-15T00:00:00Z", key="SSSB-7")}
+    verdicts = run_cross_tool(tickets, act, as_of="2026-06-25T00:00:00+00:00")
+    assert verdicts[0].actual_status == "amber"
+    assert not verdicts[0].is_watermelon
+
+
 def test_run_cross_tool_flags_only_watermelons():
     tickets = {
         "SSSB-1": {"key": "SSSB-1", "status": "In Progress", "team": "Atlas"},

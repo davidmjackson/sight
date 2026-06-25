@@ -22,3 +22,15 @@ exists, `null_reconciler` abstains so the suite is RED (the eval-first signal).
 | 5    | To Do       | none                   | false         | green  | (none) |
 
 Cases 4 and 5 are the false-positive guards: a merged PR is healthy, a backlog ticket is not lying.
+
+## Stalled (amber)
+
+A ticket claiming progress with an open PR that has gone quiet (no PR/commit activity for
+`stale_after_days`, default 7, measured against an injected `as_of`) is flagged **amber /
+stalled** - a warning, not a watermelon (`is_watermelon` stays False). Boundary: age >= 7 days
+is stalled, age < 7 is green. When `as_of` is absent the check is skipped (back-compat).
+
+| Case | Jira status | GitHub activity                  | actual | Required evidence |
+|------|-------------|----------------------------------|--------|-------------------|
+| 6    | In Progress | open PR #20, updated 10 days ago | amber  | jira-SSSB-7, github:PR#20:stalled-10d |
+| 7    | In Progress | open PR #21, updated 1 day ago   | green  | (none) |
