@@ -14,5 +14,5 @@ def test_red_without_a_reconciler():
 def test_green_with_the_real_reconciler():
     report = run_cross_tool_eval(reconcile)
     assert report.pass_rate == 1.0
-    assert report.dimension_rates()["classification"] == (5, 5)
-    assert report.dimension_rates()["evidence"] == (5, 5)
+    assert report.dimension_rates()["classification"] == (7, 7)
+    assert report.dimension_rates()["evidence"] == (7, 7)
