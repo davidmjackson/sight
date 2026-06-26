@@ -97,3 +97,9 @@ def test_crosstool_requires_login(anon_client):
 
 def test_portfolio_links_to_crosstool(client):
     assert "/crosstool" in client.get("/").text
+
+
+def test_crosstool_page_shows_offline_badge_by_default(client):
+    resp = client.get("/crosstool")
+    assert resp.status_code == 200
+    assert "offline replay" in resp.text
