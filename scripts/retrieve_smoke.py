@@ -10,6 +10,7 @@ work on a real database. Exits non-zero on failure.
 import os
 import sys
 
+from sprintsight.config import load_env
 from sprintsight.ingest.embedding import HashingEmbedder
 from sprintsight.retrieval.postgres import PostgresRetriever
 
@@ -17,6 +18,7 @@ VALID_SOURCE_TYPES = {"jira", "confluence", "slack", "raid", "other"}
 
 
 def main() -> int:
+    load_env()
     dsn = os.getenv("DATABASE_URL")
     if not dsn:
         print("DATABASE_URL not set")

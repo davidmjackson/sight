@@ -12,12 +12,14 @@ import json
 import os
 import sys
 
+from sprintsight.config import load_env
 from sprintsight.ingest import ingest_corpus
 from sprintsight.ingest.embedding import HashingEmbedder
 from sprintsight.ingest.store import InMemoryStore, PostgresStore
 
 
 def main() -> int:
+    load_env()
     dsn = os.getenv("DATABASE_URL")
     store = PostgresStore(dsn) if dsn else InMemoryStore()
     try:
