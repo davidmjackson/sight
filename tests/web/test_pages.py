@@ -1,3 +1,6 @@
+from sprintsight.web import crosstool_service
+
+
 def test_portfolio_page_lists_all_teams(client):
     resp = client.get("/")
     assert resp.status_code == 200
@@ -103,3 +106,42 @@ def test_crosstool_page_shows_offline_badge_by_default(client):
     resp = client.get("/crosstool")
     assert resp.status_code == 200
     assert "offline replay" in resp.text
+
+
+def test_crosstool_page_shows_live_badge(client, monkeypatch):
+    """Live gate open + fake live source -> page renders the live-as-of badge."""
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
+    monkeypatch.setenv("GITHUB_TOKEN", "x")
+    monkeypatch.setenv("COMPOSIO_API_KEY", "x")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
+
+    def _fake_live_source():
+        return (
+            [{"key": "SSSB-1", "status": "In Progress", "team": "Atlas"}],
+            {},
+            "2026-07-01T12:00:00Z",
+            "live",
+        )
+
+    monkeypatch.setattr(crosstool_service, "_live_source", _fake_live_source)
+    resp = client.get("/crosstool")
+    assert resp.status_code == 200
+    assert "live as of 2026-07-01T12:00:00Z" in resp.text
+
+
+def test_crosstool_page_shows_offline_failed_badge(client, monkeypatch):
+    """Live gate open but live source raises -> page renders the offline-failed badge."""
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
+    monkeypatch.setenv("GITHUB_TOKEN", "x")
+    monkeypatch.setenv("COMPOSIO_API_KEY", "x")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
+
+    def _failing_live_source():
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(crosstool_service, "_live_source", _failing_live_source)
+    resp = client.get("/crosstool")
+    assert resp.status_code == 200
+    assert "offline (live read failed)" in resp.text

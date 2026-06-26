@@ -1,6 +1,9 @@
+import pytest
+
 from sprintsight.web import crosstool_service
 from sprintsight.web.crosstool_service import (
     _active_source,
+    _crosstool_live_enabled,
     _github_citation,
     _jira_citation,
     crosstool_view,
@@ -99,3 +102,40 @@ def test_live_failure_falls_back_to_offline_failed(monkeypatch):
     page = crosstool_view(source=_active_source)
     assert page.summary.mode == "offline-failed"
     assert page.summary.checked == 4  # fell back to the fixtures
+
+
+# ---------------------------------------------------------------------------
+# Gate fail-safe: any one missing credential must disable live mode
+# ---------------------------------------------------------------------------
+
+_ALL_LIVE_ENV = {
+    "SPRINTSIGHT_CROSSTOOL_LIVE": "on",
+    "GITHUB_TOKEN": "x",
+    "COMPOSIO_API_KEY": "x",
+    "SPRINTSIGHT_CROSSTOOL_REPO": "owner/repo",
+    "SPRINTSIGHT_CROSSTOOL_PROJECT": "SSSB",
+}
+
+
+@pytest.mark.parametrize(
+    "omitted",
+    [
+        "SPRINTSIGHT_CROSSTOOL_LIVE",
+        "GITHUB_TOKEN",
+        "COMPOSIO_API_KEY",
+        "SPRINTSIGHT_CROSSTOOL_REPO",
+        "SPRINTSIGHT_CROSSTOOL_PROJECT",
+        None,  # all five present -> gate must be True
+    ],
+)
+def test_live_gate_requires_all_five_credentials(monkeypatch, omitted):
+    """Gate is False when any single credential is absent; True only with all five."""
+    for key, value in _ALL_LIVE_ENV.items():
+        if key != omitted:
+            monkeypatch.setenv(key, value)
+        else:
+            monkeypatch.delenv(key, raising=False)
+    if omitted is None:
+        assert _crosstool_live_enabled() is True
+    else:
+        assert _crosstool_live_enabled() is False
