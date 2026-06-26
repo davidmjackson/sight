@@ -33,8 +33,9 @@ Install the database extra editable, so the scripts run your working tree:
     python scripts/retrieve_smoke.py   # a fresh process reads a cited chunk back
 
 Expected: `migrate.py` prints `RESULT applied 1 migration(s)`; `ingest.py` prints a `RESULT`
-line with `"db_artifact": 37`; `retrieve_smoke.py` exits 0 and prints ranked results with
-provenance. Because `retrieve_smoke.py` is a separate process from `ingest.py`, a successful
+line with `"db_artifact": 37`; `retrieve_smoke.py` exits 0 and prints a single `OK` summary
+line confirming ranked results with provenance (the top `source_ref`). Because
+`retrieve_smoke.py` is a separate process from `ingest.py`, a successful
 read proves the data persisted and survives a restart.
 
 ## Re-running is safe
