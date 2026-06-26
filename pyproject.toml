@@ -32,7 +32,7 @@ db = [
 # docs/connectors/live-run.md for the one-step live-run commands. The exact Composio
 # distribution is confirmed at install time (the SDK fetch path is not yet live-run).
 connectors = [
-  "composio",
+  "composio>=0.16,<0.17",
   "PyGithub>=2",
 ]
 # Stage 6 web app (FastAPI portfolio + watermelon drill-in). httpx is the test client;
