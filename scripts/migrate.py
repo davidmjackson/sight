@@ -29,13 +29,28 @@ def main() -> int:
         print("DATABASE_URL not set; see docs/db/supabase-setup.md")
         return 2
 
-    import psycopg  # lazy: only needed when actually applying
+    try:
+        import psycopg  # lazy: only needed when actually applying
+    except ImportError:
+        print("psycopg not installed; run: pip install -e '.[db]'")
+        return 3
 
     files = migration_files()
-    with psycopg.connect(dsn, autocommit=True) as conn:
-        for f in files:
-            print(f"applying {f.name}")
-            conn.execute(f.read_text(encoding="utf-8"))
+    current_file: str | None = None
+    try:
+        with psycopg.connect(dsn, autocommit=True) as conn:
+            for f in files:
+                current_file = f.name
+                print(f"applying {f.name}")
+                conn.execute(f.read_text(encoding="utf-8"))
+    except psycopg.Error as exc:
+        where = f" at {current_file}" if current_file else ""
+        print(
+            f"migrate failed{where} ({type(exc).__name__}: {exc}). "
+            f"migrate.py is a ONE-TIME step; the database may already be migrated. "
+            f"Re-running after the schema exists will fail."
+        )
+        return 4
     print(f"RESULT applied {len(files)} migration(s)")
     return 0
 

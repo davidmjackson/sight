@@ -43,6 +43,10 @@ read proves the data persisted and survives a restart.
 `ingest.py` is idempotent (keyed on a content hash). A second run reports `"ingested": 0` and
 skips the existing rows, so you can re-run it without duplicating data.
 
+`migrate.py` is a ONE-TIME step: re-running it after the schema already exists will report a
+clean error message (class and text only, no raw password) and exit, so only run migrate once
+per database.
+
 ## Security notes
 
 - Synthetic data only; encryption-at-rest is provided by Supabase (ADR-0002).

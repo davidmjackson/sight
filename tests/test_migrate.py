@@ -30,3 +30,53 @@ def test_real_migrations_discovered():
     assert files, "expected at least one migration file"
     assert files == sorted(files)
     assert all(p.suffix == ".sql" for p in files)
+
+
+def test_main_returns_3_when_psycopg_missing(monkeypatch, capsys):
+    """Missing [db] extra yields rc=3 with install hint, no traceback."""
+    import sys
+
+    import scripts.migrate as migrate
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://dummy/dummy")
+    monkeypatch.setattr(migrate, "load_env", lambda *a, **k: None)
+    # Setting a key to None in sys.modules causes `import psycopg` to raise ImportError.
+    monkeypatch.setitem(sys.modules, "psycopg", None)
+
+    rc = migrate.main()
+    out = capsys.readouterr().out
+    assert rc == 3
+    assert "pip install -e '.[db]'" in out
+
+
+def test_main_returns_4_on_apply_error(monkeypatch, capsys):
+    """A psycopg error during apply yields rc=4 with a clean message, no raw traceback."""
+    import sys
+    import types
+
+    import scripts.migrate as migrate
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://dummy/dummy")
+    monkeypatch.setattr(migrate, "load_env", lambda *a, **k: None)
+
+    # Build a minimal fake psycopg module so connect raises a psycopg-shaped error.
+    class FakeError(Exception):
+        pass
+
+    class FakeOperationalError(FakeError):
+        pass
+
+    def fake_connect(*a, **k):
+        raise FakeOperationalError("boom")
+
+    fake_psycopg = types.ModuleType("psycopg")
+    fake_psycopg.Error = FakeError
+    fake_psycopg.OperationalError = FakeOperationalError
+    fake_psycopg.connect = fake_connect
+    monkeypatch.setitem(sys.modules, "psycopg", fake_psycopg)
+
+    rc = migrate.main()
+    out = capsys.readouterr().out
+    assert rc == 4
+    assert "ONE-TIME" in out
+    assert "already be migrated" in out
