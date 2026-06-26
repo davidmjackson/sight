@@ -30,10 +30,13 @@ PRs, so `fetch_github` derives the merged flag from `merged_at`. This is calibra
 ## Live Jira read (Goal A)
 
 The Jira read goes through Composio, reusing the already-connected Jira account, so it needs a
-Composio API key rather than a Jira token:
+Composio API key and a connected account id rather than a Jira token:
 
     export COMPOSIO_API_KEY=<your-composio-key>
+    export COMPOSIO_CONNECTED_ACCOUNT_ID=<your-ac_... connection id>
     python scripts/run_connector_demo.py --project SSSB
+
+The connection id identifies which connected Jira account Composio reads; the connector reads it from `COMPOSIO_CONNECTED_ACCOUNT_ID` and never commits it.
 
 ## Offline equivalents (no secrets, used in CI and demos)
 

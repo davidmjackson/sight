@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from sprintsight.connect.connector import (
     JiraConnector,
     RecordedConnector,
@@ -149,8 +151,6 @@ def test_issues_from_response_returns_issue_list():
 
 
 def test_issues_from_response_raises_on_failure():
-    import pytest
-
     resp = _Resp(successful=False, error="boom")
     with pytest.raises(RuntimeError, match="boom"):
         _issues_from_response(resp)
@@ -159,3 +159,41 @@ def test_issues_from_response_raises_on_failure():
 def test_issues_from_response_empty_when_no_issues():
     assert _issues_from_response(_Resp(data={})) == []
     assert _issues_from_response(_Resp(data=None)) == []
+
+
+def test_fetch_issues_uses_new_client_and_connection_id(monkeypatch):
+    import sys
+    import types
+
+    calls = {}
+
+    class _FakeTools:
+        def execute(self, slug, arguments, **kwargs):
+            calls["slug"] = slug
+            calls["arguments"] = arguments
+            calls["connected_account_id"] = kwargs.get("connected_account_id")
+
+            class _R:
+                successful = True
+                data = {"issues": [{"key": "SSSB-7", "summary": "x", "status": "To Do"}]}
+                error = None
+
+            return _R()
+
+    class _FakeComposio:
+        def __init__(self, *a, **k):
+            self.tools = _FakeTools()
+
+    fake_mod = types.ModuleType("composio")
+    fake_mod.Composio = _FakeComposio
+    monkeypatch.setitem(sys.modules, "composio", fake_mod)
+    monkeypatch.setenv("COMPOSIO_API_KEY", "k")
+    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ac_test")
+
+    from sprintsight.connect.connector import fetch_issues
+
+    issues = fetch_issues("SSSB")
+    assert calls["slug"] == "JIRA_SEARCH_ISSUES"
+    assert calls["connected_account_id"] == "ac_test"
+    assert "project = SSSB" in calls["arguments"]["jql"]
+    assert issues[0]["key"] == "SSSB-7"  # routed through _to_clean

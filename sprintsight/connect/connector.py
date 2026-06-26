@@ -4,6 +4,7 @@ pattern as the embedder / store / auth / writer seams.
 """
 
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol
@@ -48,29 +49,31 @@ def _issues_from_response(resp: Any) -> list[dict[str, Any]]:
 
 
 def fetch_issues(project_key: str) -> list[dict[str, Any]]:
-    """Network: pull issues for `project_key` from Jira via the Composio SDK, reusing the
-    already-connected Jira account, and return stable simplified issue dicts.
+    """Network: pull issues for `project_key` from Jira via the Composio client, reusing the
+    already-connected Jira account identified by `COMPOSIO_CONNECTED_ACCOUNT_ID`, and return
+    stable simplified issue dicts.
 
-    The Composio SDK is imported lazily so the module imports without it installed and so no
-    test touches the network (tests inject a fake fetcher into JiraConnector instead).
+    The `Composio` client (composio>=0.16) is imported lazily so the module imports without it
+    installed and so no test touches the network (tests inject a fake fetcher into JiraConnector
+    instead, or monkeypatch a fake `composio` module for the wiring test).
 
     The exact Composio action slug and Jira custom-field IDs (sprint, story points) are confirmed
     at live-run time against the connected account; `_to_clean` is the single place that mapping
     lives. Until a live run, use RecordedConnector.
     """
-    from composio import ComposioToolSet  # lazy: runtime-only dependency
+    from composio import Composio  # lazy: runtime-only dependency
 
-    toolset = ComposioToolSet()
-    raw = toolset.execute_action(
-        action="JIRA_SEARCH_ISSUES",
-        params={
+    composio = Composio()  # reads COMPOSIO_API_KEY from the environment
+    resp = composio.tools.execute(
+        "JIRA_SEARCH_ISSUES",
+        arguments={
             "jql": f"project = {project_key} ORDER BY updated DESC",
             "fields": ["summary", "status", "labels", "description", "updated", "assignee"],
             "max_results": 100,
         },
+        connected_account_id=os.environ["COMPOSIO_CONNECTED_ACCOUNT_ID"],
     )
-    issues = (raw.get("data", {}) or {}).get("issues", [])
-    return [_to_clean(issue) for issue in issues]
+    return [_to_clean(issue) for issue in _issues_from_response(resp)]
 
 
 def _team_from_labels(labels: list[str]) -> str:
