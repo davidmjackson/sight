@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from sprintsight.connect.connector import JiraConnector, RecordedConnector, _to_clean
+from sprintsight.connect.connector import (
+    JiraConnector,
+    RecordedConnector,
+    _issues_from_response,
+    _to_clean,
+)
 from sprintsight.connect.normalize import normalize, render_body
 from sprintsight.ingest import ingest_corpus
 from sprintsight.ingest.embedding import HashingEmbedder
@@ -128,3 +133,29 @@ def test_jira_connector_uses_injected_fetcher():
     artifacts = conn.fetch()
     assert list(artifacts) == ["jira-SSD-99"]
     assert artifacts["jira-SSD-99"].team == "Echo"
+
+
+class _Resp:
+    def __init__(self, successful=True, data=None, error=None):
+        self.successful = successful
+        self.data = data
+        self.error = error
+
+
+def test_issues_from_response_returns_issue_list():
+    resp = _Resp(data={"issues": [{"key": "SSSB-1"}, {"key": "SSSB-2"}]})
+    issues = _issues_from_response(resp)
+    assert [i["key"] for i in issues] == ["SSSB-1", "SSSB-2"]
+
+
+def test_issues_from_response_raises_on_failure():
+    import pytest
+
+    resp = _Resp(successful=False, error="boom")
+    with pytest.raises(RuntimeError, match="boom"):
+        _issues_from_response(resp)
+
+
+def test_issues_from_response_empty_when_no_issues():
+    assert _issues_from_response(_Resp(data={})) == []
+    assert _issues_from_response(_Resp(data=None)) == []

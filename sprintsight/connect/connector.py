@@ -35,6 +35,18 @@ class RecordedConnector:
         return _to_artifacts(self._issues)
 
 
+def _issues_from_response(resp: Any) -> list[dict[str, Any]]:
+    """Pull the issue list out of a Composio ToolExecutionResponse, raising on a failed
+    call so the caller's fail-safe gate can fall back to offline. `data` is already the
+    tool's data dict in the new SDK (no outer envelope)."""
+    if not getattr(resp, "successful", True):
+        raise RuntimeError(
+            f"Composio JIRA_SEARCH_ISSUES failed: {getattr(resp, 'error', None)}"
+        )
+    data = getattr(resp, "data", resp) or {}
+    return data.get("issues", []) or []
+
+
 def fetch_issues(project_key: str) -> list[dict[str, Any]]:
     """Network: pull issues for `project_key` from Jira via the Composio SDK, reusing the
     already-connected Jira account, and return stable simplified issue dicts.
