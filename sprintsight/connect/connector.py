@@ -37,14 +37,21 @@ class RecordedConnector:
 
 
 def _issues_from_response(resp: Any) -> list[dict[str, Any]]:
-    """Pull the issue list out of a Composio ToolExecutionResponse, raising on a failed
-    call so the caller's fail-safe gate can fall back to offline. `data` is already the
-    tool's data dict in the new SDK (no outer envelope)."""
-    if not getattr(resp, "successful", True):
-        raise RuntimeError(
-            f"Composio JIRA_SEARCH_ISSUES failed: {getattr(resp, 'error', None)}"
-        )
-    data = getattr(resp, "data", None) or {}
+    """Pull the issue list out of a Composio tool response, raising on a failed call so the
+    caller's fail-safe gate can fall back to offline.
+
+    Verified live (composio 0.16, 2026-06-26): the response is a plain dict
+    `{"data": {"issues": [...], ...}, "error": ..., "successful": bool}`. We read it dict-first
+    and fall back to attribute access so an object-shaped response (e.g. a future SDK) still works.
+    """
+    def _read(key: str, default: Any = None) -> Any:
+        if isinstance(resp, dict):
+            return resp.get(key, default)
+        return getattr(resp, key, default)
+
+    if not _read("successful", True):
+        raise RuntimeError(f"Composio JIRA_SEARCH_ISSUES failed: {_read('error')}")
+    data = _read("data") or {}
     return data.get("issues", []) or []
 
 
@@ -80,6 +87,13 @@ def fetch_issues(project_key: str) -> list[dict[str, Any]]:
             "max_results": 100,
         },
         connected_account_id=os.environ["COMPOSIO_CONNECTED_ACCOUNT_ID"],
+        # composio 0.16 requires the owning user id (entity) alongside the connected
+        # account id, else it 400s with ActionExecute_ConnectedAccountEntityIdRequired.
+        user_id=os.environ["COMPOSIO_USER_ID"],
+        # composio 0.16 refuses manual execution without a pinned toolkit version and
+        # rejects "latest"; we accept the latest tool version here and rely on the
+        # /crosstool page's fail-safe (a shape change surfaces as offline, never a crash).
+        dangerously_skip_version_check=True,
     )
     return [_to_clean(issue) for issue in _issues_from_response(resp)]
 

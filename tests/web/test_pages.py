@@ -113,7 +113,8 @@ def test_crosstool_page_shows_live_badge(client, monkeypatch):
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
     monkeypatch.setenv("GITHUB_TOKEN", "x")
     monkeypatch.setenv("COMPOSIO_API_KEY", "x")
-    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ac_x")
+    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ca_x")
+    monkeypatch.setenv("COMPOSIO_USER_ID", "user_x")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
 
@@ -136,7 +137,8 @@ def test_crosstool_page_shows_offline_failed_badge(client, monkeypatch):
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
     monkeypatch.setenv("GITHUB_TOKEN", "x")
     monkeypatch.setenv("COMPOSIO_API_KEY", "x")
-    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ac_x")
+    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ca_x")
+    monkeypatch.setenv("COMPOSIO_USER_ID", "user_x")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
 

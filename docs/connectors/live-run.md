@@ -41,17 +41,26 @@ The Jira read goes through Composio, reusing the already-connected Jira account,
 Composio API key and a connected account id rather than a Jira token:
 
     export COMPOSIO_API_KEY=<your-composio-key>
-    export COMPOSIO_CONNECTED_ACCOUNT_ID=<your-ac_... connection id>
+    export COMPOSIO_CONNECTED_ACCOUNT_ID=<your-ca_... connection id>
+    export COMPOSIO_USER_ID=<your-user-id from the Users page>
     python scripts/run_connector_demo.py --project SSSB
+
+composio 0.16 needs all THREE: the account API key authenticates the app; the `ca_...`
+connection id plus the owning User ID together identify which connected Jira account to read
+(the SDK 400s with `ConnectedAccountEntityIdRequired` if the User ID is missing). The connector
+also passes `dangerously_skip_version_check=True` because manual `tools.execute` refuses to run
+without a pinned toolkit version and rejects "latest".
 
 The connection id identifies which connected Jira account Composio reads; the connector reads it from `COMPOSIO_CONNECTED_ACCOUNT_ID` and never commits it.
 
 Where to find the two values in the Composio dashboard:
-- `COMPOSIO_API_KEY` is your account API key, under Settings / API Keys. It is a long string.
-  A short value (around 15 characters) is a partial paste, and Composio rejects it with
-  `401 Invalid API key`.
-- `COMPOSIO_CONNECTED_ACCOUNT_ID` is under Connected accounts / Connections, on the Jira row.
-  It looks like `ca_...`.
+- `COMPOSIO_API_KEY` is your account API key. If the API Keys page is empty you must CREATE one
+  (it is shown once; copy it in full). It is a long string; a short value (around 15 characters)
+  is a partial paste or the wrong id, and Composio rejects it with `401 Invalid API key`.
+- `COMPOSIO_CONNECTED_ACCOUNT_ID` is the `ca_...` id of the connected account. Find it via Users
+  -> click the user -> its connected account. (The `ac_...` id under Auth Configs is a different
+  thing and will not work here.)
+- `COMPOSIO_USER_ID` is the user/entity id on the Users page.
 
 Same-terminal rule: `export` only sets a variable for the current terminal. Set both vars and
 run the script in the **one** terminal window. If you open a new tab, the variables are gone
@@ -69,12 +78,9 @@ These run the exact same connector logic against captured real data, no network:
 ## Status
 
 The offline paths are exercised by the test suite and the captured-replay demos. The
-`fetch_issues` Jira path now targets the current Composio SDK (`Composio().tools.execute(...)`,
-ported 2026-06-26). A first live attempt confirmed the port is correct: with the editable
-install in place the script reached a real authenticated Composio call and the SDK accepted the
-request shape, failing only at credential validation (`401 Invalid API key`) because a partial
-key was pasted. So the remaining step is purely supplying a valid `COMPOSIO_API_KEY` plus the
-`ca_...` connection id; once a real read returns, confirm the response arrives as `{"issues":
-[...]}` under `resp.data` and that the inner issue shape still matches `_to_clean` (adjust only
-`_issues_from_response` / `_to_clean` and their fixtures if it differs). The GitHub `fetch_github`
-path via PyGithub is unchanged and still needs only a `GITHUB_TOKEN`.
+`fetch_issues` Jira path targets the current Composio SDK (`Composio().tools.execute(...)`) and is
+**LIVE-VERIFIED end to end (2026-06-26)**: a real read of project SSSB returned 6 tickets, ingested
+and retrievable (top cited SSSB-1). Calibration result: the composio 0.16 response is a plain dict
+`{"data": {"issues": [...]}, "error": ..., "successful": ...}` (NOT an object), so
+`_issues_from_response` reads it dict-first; the inner issue shape matched `_to_clean` unchanged.
+The GitHub `fetch_github` path via PyGithub is unchanged and still needs only a `GITHUB_TOKEN`.

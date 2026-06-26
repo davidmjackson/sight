@@ -161,6 +161,18 @@ def test_issues_from_response_empty_when_no_issues():
     assert _issues_from_response(_Resp(data=None)) == []
 
 
+def test_issues_from_response_handles_dict_response():
+    # The real composio 0.16 response is a plain dict, not an object (verified live 2026-06-26).
+    resp = {"successful": True, "error": None, "data": {"issues": [{"key": "SSSB-1"}]}}
+    assert _issues_from_response(resp) == [{"key": "SSSB-1"}]
+
+
+def test_issues_from_response_raises_on_dict_failure():
+    resp = {"successful": False, "error": "nope", "data": None}
+    with pytest.raises(RuntimeError, match="nope"):
+        _issues_from_response(resp)
+
+
 def test_fetch_issues_uses_new_client_and_connection_id(monkeypatch):
     import sys
     import types
@@ -172,13 +184,14 @@ def test_fetch_issues_uses_new_client_and_connection_id(monkeypatch):
             calls["slug"] = slug
             calls["arguments"] = arguments
             calls["connected_account_id"] = kwargs.get("connected_account_id")
-
-            class _R:
-                successful = True
-                data = {"issues": [{"key": "SSSB-7", "summary": "x", "status": "To Do"}]}
-                error = None
-
-            return _R()
+            calls["user_id"] = kwargs.get("user_id")
+            calls["skip_version_check"] = kwargs.get("dangerously_skip_version_check")
+            # Real composio 0.16 returns a plain dict, not an object.
+            return {
+                "successful": True,
+                "error": None,
+                "data": {"issues": [{"key": "SSSB-7", "summary": "x", "status": "To Do"}]},
+            }
 
     class _FakeComposio:
         def __init__(self, *a, **k):
@@ -188,12 +201,15 @@ def test_fetch_issues_uses_new_client_and_connection_id(monkeypatch):
     fake_mod.Composio = _FakeComposio
     monkeypatch.setitem(sys.modules, "composio", fake_mod)
     monkeypatch.setenv("COMPOSIO_API_KEY", "k")
-    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ac_test")
+    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ca_test")
+    monkeypatch.setenv("COMPOSIO_USER_ID", "user_test")
 
     from sprintsight.connect.connector import fetch_issues
 
     issues = fetch_issues("SSSB")
     assert calls["slug"] == "JIRA_SEARCH_ISSUES"
-    assert calls["connected_account_id"] == "ac_test"
+    assert calls["connected_account_id"] == "ca_test"
+    assert calls["user_id"] == "user_test"  # required by composio 0.16 alongside the connection
+    assert calls["skip_version_check"] is True  # manual execution needs this on composio 0.16
     assert "project = SSSB" in calls["arguments"]["jql"]
     assert issues[0]["key"] == "SSSB-7"  # routed through _to_clean
