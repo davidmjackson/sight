@@ -2,7 +2,15 @@
 {% block title %}Cross-tool signals{% endblock %}
 {% block main %}
 <h1>Cross-tool signals</h1>
-<p class="lede">Jira status versus the actual GitHub activity, per ticket. <a href="/">Back to portfolio</a>.</p>
+<p class="lede">Jira status versus the actual GitHub activity, per ticket.
+  {% if page.summary.mode == 'live' %}
+    <span class="badge badge-ok" title="Read live from Jira + GitHub">live as of {{ page.summary.as_of }}</span>
+  {% elif page.summary.mode == 'offline-failed' %}
+    <span class="badge badge-stalled" title="Live read failed; showing the saved snapshot">offline (live read failed)</span>
+  {% else %}
+    <span class="badge badge-ok" title="Saved snapshot, deterministic">offline replay</span>
+  {% endif %}
+  <a href="/">Back to portfolio</a>.</p>
 
 <div class="summary-band">
   <div class="kpi{% if page.summary.watermelons %} kpi-alert{% endif %}">

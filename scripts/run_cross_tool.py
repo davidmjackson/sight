@@ -17,21 +17,8 @@ from datetime import UTC, datetime
 
 from sprintsight.connect.connector import JiraConnector, RecordedConnector
 from sprintsight.connect.github import GitHubConnector, RecordedGitHubConnector
+from sprintsight.connect.jira_tickets import tickets_from_artifacts
 from sprintsight.crosstool import run_cross_tool
-
-
-def _tickets_from_artifacts(artifacts: dict) -> dict[str, dict]:
-    out: dict[str, dict] = {}
-    for art in artifacts.values():
-        key = art.meta.get("source_ref", art.artifact_id)
-        # status rides in the body's meta line: "**Status:** In Progress · ..."
-        status = ""
-        for line in art.body.splitlines():
-            if "Status:" in line:
-                status = line.split("Status:", 1)[1].split("·")[0].strip().strip("*").strip()
-                break
-        out[key] = {"key": key, "status": status, "team": art.team}
-    return out
 
 
 def main() -> None:
@@ -53,7 +40,7 @@ def main() -> None:
         else JiraConnector(args.project)
     )
 
-    tickets = _tickets_from_artifacts(jira.fetch())
+    tickets = tickets_from_artifacts(jira.fetch())
     as_of = datetime.now(UTC).isoformat()
     verdicts = run_cross_tool(tickets, gh.fetch_activity(), as_of=as_of)
 
