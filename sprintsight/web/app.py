@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
+from sprintsight.config import load_env
 from sprintsight.web import crosstool_service, service
 from sprintsight.web.auth.session import (
     is_dev,
@@ -25,6 +26,7 @@ _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
 
 
 def create_app() -> FastAPI:
+    load_env()
     app = FastAPI(title="Sprintsight watermelon detector")
     app.add_middleware(
         SessionMiddleware,
