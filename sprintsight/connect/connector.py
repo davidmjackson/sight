@@ -44,7 +44,7 @@ def _issues_from_response(resp: Any) -> list[dict[str, Any]]:
         raise RuntimeError(
             f"Composio JIRA_SEARCH_ISSUES failed: {getattr(resp, 'error', None)}"
         )
-    data = getattr(resp, "data", resp) or {}
+    data = getattr(resp, "data", None) or {}
     return data.get("issues", []) or []
 
 
@@ -68,7 +68,15 @@ def fetch_issues(project_key: str) -> list[dict[str, Any]]:
         "JIRA_SEARCH_ISSUES",
         arguments={
             "jql": f"project = {project_key} ORDER BY updated DESC",
-            "fields": ["summary", "status", "labels", "description", "updated", "assignee"],
+            "fields": [
+                "summary",
+                "status",
+                "labels",
+                "description",
+                "updated",
+                "assignee",
+                "reporter",
+            ],
             "max_results": 100,
         },
         connected_account_id=os.environ["COMPOSIO_CONNECTED_ACCOUNT_ID"],
