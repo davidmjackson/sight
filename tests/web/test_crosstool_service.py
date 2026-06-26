@@ -1,4 +1,6 @@
+from sprintsight.web import crosstool_service
 from sprintsight.web.crosstool_service import (
+    _active_source,
     _github_citation,
     _jira_citation,
     crosstool_view,
@@ -55,3 +57,45 @@ def test_stalled_row_citation_names_the_stalled_pr():
     stalled = [r for r in crosstool_view().rows if r.classification == "stalled"]
     assert len(stalled) == 1
     assert "no activity" in stalled[0].github_citation
+
+
+def _fake_live_source():
+    # one "In Progress" ticket with no GitHub activity -> a watermelon
+    tickets = [{"key": "SSSB-1", "status": "In Progress", "team": "Atlas"}]
+    activity = {}
+    return tickets, activity, "2026-07-01T12:00:00Z", "live"
+
+
+def test_live_source_shapes_page_with_live_mode():
+    page = crosstool_view(source=_fake_live_source)
+    assert page.summary.mode == "live"
+    assert page.summary.as_of == "2026-07-01T12:00:00Z"
+    assert page.summary.checked == 1
+    assert page.summary.watermelons == 1
+    row = page.rows[0]
+    assert row.key == "SSSB-1"
+    assert row.jira_citation.startswith("Jira ")
+    assert row.github_citation.startswith("GitHub:")
+
+
+def test_default_source_is_offline(monkeypatch):
+    monkeypatch.delenv("SPRINTSIGHT_CROSSTOOL_LIVE", raising=False)
+    page = crosstool_view()
+    assert page.summary.mode == "offline"
+    assert page.summary.checked == 4
+
+
+def test_live_failure_falls_back_to_offline_failed(monkeypatch):
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
+    monkeypatch.setenv("GITHUB_TOKEN", "x")
+    monkeypatch.setenv("COMPOSIO_API_KEY", "x")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
+    monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
+
+    def boom():
+        raise RuntimeError("network down")
+
+    monkeypatch.setattr(crosstool_service, "_live_source", boom)
+    page = crosstool_view(source=_active_source)
+    assert page.summary.mode == "offline-failed"
+    assert page.summary.checked == 4  # fell back to the fixtures
