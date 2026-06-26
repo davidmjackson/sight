@@ -92,6 +92,7 @@ def test_live_failure_falls_back_to_offline_failed(monkeypatch):
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_LIVE", "on")
     monkeypatch.setenv("GITHUB_TOKEN", "x")
     monkeypatch.setenv("COMPOSIO_API_KEY", "x")
+    monkeypatch.setenv("COMPOSIO_CONNECTED_ACCOUNT_ID", "ac_x")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_REPO", "owner/repo")
     monkeypatch.setenv("SPRINTSIGHT_CROSSTOOL_PROJECT", "SSSB")
 
@@ -112,6 +113,7 @@ _ALL_LIVE_ENV = {
     "SPRINTSIGHT_CROSSTOOL_LIVE": "on",
     "GITHUB_TOKEN": "x",
     "COMPOSIO_API_KEY": "x",
+    "COMPOSIO_CONNECTED_ACCOUNT_ID": "ac_x",
     "SPRINTSIGHT_CROSSTOOL_REPO": "owner/repo",
     "SPRINTSIGHT_CROSSTOOL_PROJECT": "SSSB",
 }
@@ -123,13 +125,14 @@ _ALL_LIVE_ENV = {
         "SPRINTSIGHT_CROSSTOOL_LIVE",
         "GITHUB_TOKEN",
         "COMPOSIO_API_KEY",
+        "COMPOSIO_CONNECTED_ACCOUNT_ID",
         "SPRINTSIGHT_CROSSTOOL_REPO",
         "SPRINTSIGHT_CROSSTOOL_PROJECT",
-        None,  # all five present -> gate must be True
+        None,  # all six present -> gate must be True
     ],
 )
-def test_live_gate_requires_all_five_credentials(monkeypatch, omitted):
-    """Gate is False when any single credential is absent; True only with all five."""
+def test_live_gate_requires_all_six_credentials(monkeypatch, omitted):
+    """Gate is False when any single credential is absent; True only with all six."""
     for key, value in _ALL_LIVE_ENV.items():
         if key != omitted:
             monkeypatch.setenv(key, value)

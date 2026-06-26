@@ -116,6 +116,7 @@ def _crosstool_live_enabled() -> bool:
         os.environ.get(_LIVE_FLAG) == "on"
         and bool(os.environ.get("GITHUB_TOKEN"))
         and bool(os.environ.get("COMPOSIO_API_KEY"))
+        and bool(os.environ.get("COMPOSIO_CONNECTED_ACCOUNT_ID"))
         and _crosstool_config() is not None
     )
 
