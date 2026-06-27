@@ -122,6 +122,9 @@ class PostgresStore:
 
         self.tenant_id = tenant_id
         self._conn = psycopg.connect(dsn, autocommit=True)
+        # Announce this connection's tenant so per-tenant RLS policies (migration 0003) scope every
+        # query/insert at the DB. session-level (local=false) is correct under autocommit.
+        self._conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
 
     def upsert_team(self, key: str, name: str) -> str:
         with self._conn.cursor() as cur:
