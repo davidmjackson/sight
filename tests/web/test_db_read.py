@@ -134,6 +134,16 @@ def test_db_knowledge_failsafe_on_error(db_on, monkeypatch):
     assert raising.closed is True  # connection still released
 
 
+def test_db_knowledge_failsafe_on_connect_error(db_on, monkeypatch):
+    """The realistic live failure: building the retriever itself raises (DB down / bad creds)."""
+
+    def boom():
+        raise RuntimeError("could not connect")
+
+    monkeypatch.setattr(service, "_make_retriever", boom)
+    assert service.db_knowledge_for("Atlas") == []  # no exception escapes, no leak (nothing opened)
+
+
 # --- wired into team_detail ---------------------------------------------------
 
 def test_team_detail_has_no_db_knowledge_when_off(monkeypatch):

@@ -61,7 +61,7 @@ class PostgresRetriever:
                 sprint=0,
                 ordinal=ordinal,
                 text=text,
-                score=1.0 - float(distance),  # cosine distance -> similarity
+                score=max(0.0, 1.0 - float(distance)),  # cosine distance -> similarity (clamped)
             )
             for source_type, source_ref, team_key, ordinal, text, distance in rows
         ]
