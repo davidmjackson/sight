@@ -41,3 +41,6 @@ privilege when you ran the migrations. Two manual steps remain on the live datab
   would lock the admin/owner out of its own tables.
 - Deploy ORDER if re-applying from scratch: the GUC-setting app code must be live before the
   RLS-policy migration (0003), else connections fail closed until redeploy.
+- Future-table migrations must run as the SAME owner role that ran 0004 (the admin/`postgres`), so
+  `app_rw` auto-receives CRUD via the default privileges. If a new table is created by a different
+  owner, grant `app_rw` CRUD on it explicitly, or the app hits "permission denied" at runtime.
