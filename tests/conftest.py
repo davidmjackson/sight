@@ -19,3 +19,7 @@ import os
 
 os.environ.setdefault("SPRINTSIGHT_ENV", "dev")
 os.environ["DATABASE_URL"] = "postgresql://stub:stub@127.0.0.1:1/sprintsight_tests_no_db"
+# Same hermeticity guard for auth: a developer's .env could set SPRINTSIGHT_AUTH=supabase, which
+# would make the suite attempt real Supabase logins. Force the offline seed backend (load_env never
+# overrides an existing var). Tests that exercise the gate set their own value via monkeypatch.
+os.environ["SPRINTSIGHT_AUTH"] = "seed"

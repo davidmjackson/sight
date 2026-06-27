@@ -43,3 +43,5 @@ below is manual (it needs a real Supabase project + a real user).
 - The admin accounts page lists no users under the Supabase backend (accounts are managed in the
   Supabase dashboard); listing via the admin API is a later enhancement.
 - Keep the anon key in `.env`/the deploy secret store, never in git.
+- Do not put `SPRINTSIGHT_AUTH=supabase` in a `.env` used to run the test suite (it would make tests
+  attempt real logins). The test conftest already forces the seed backend as a safeguard.

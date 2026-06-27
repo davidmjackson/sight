@@ -74,8 +74,13 @@ def _role_from(user: dict) -> str:
 
 
 def _user_from_auth(data: dict) -> User | None:
-    """Pure map of a GoTrue token response to our User, or None if there is no email."""
-    user = data.get("user") or {}
+    """Pure map of a GoTrue token response to our User, or None if it is not a usable object.
+    Guards non-dict shapes so a malformed 200 body fails closed instead of raising."""
+    if not isinstance(data, dict):
+        return None
+    user = data.get("user")
+    if not isinstance(user, dict):
+        return None
     email = user.get("email")
     if not email:
         return None

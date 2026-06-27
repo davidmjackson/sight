@@ -48,6 +48,13 @@ def test_user_from_auth_none_without_email():
     assert _user_from_auth({}) is None
 
 
+def test_user_from_auth_fails_closed_on_non_dict_shapes():
+    # a malformed 200 body must fail closed, not raise (-> a 500 on /login)
+    assert _user_from_auth([]) is None
+    assert _user_from_auth("x") is None
+    assert _user_from_auth({"user": []}) is None
+
+
 # --- authenticate() orchestration (network faked) -------------------------------
 
 def test_authenticate_returns_user_on_success(monkeypatch):
@@ -72,6 +79,53 @@ def test_authenticate_returns_none_on_failure(monkeypatch):
 
 def test_supabase_all_users_is_empty():
     assert SupabaseAuthenticator("https://x.supabase.co", "anon").all_users() == []
+
+
+# --- _password_grant network branches (httpx faked, no real network) ------------
+
+class _Resp:
+    def __init__(self, status_code, payload=None, raises=False):
+        self.status_code = status_code
+        self._payload = payload
+        self._raises = raises
+
+    def json(self):
+        if self._raises:
+            raise ValueError("no json body")
+        return self._payload
+
+
+def _auth():
+    return SupabaseAuthenticator("https://x.supabase.co/", "anon")
+
+
+def test_password_grant_success_returns_body(monkeypatch):
+    import httpx
+    body = {"user": {"email": "a@b.test"}}
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: _Resp(200, body))
+    assert _auth()._password_grant("a@b.test", "pw") == body
+
+
+def test_password_grant_non_200_returns_none(monkeypatch):
+    import httpx
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: _Resp(400, {"error": "bad"}))
+    assert _auth()._password_grant("a@b.test", "wrong") is None
+
+
+def test_password_grant_network_error_returns_none(monkeypatch):
+    import httpx
+
+    def boom(*a, **k):
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(httpx, "post", boom)
+    assert _auth()._password_grant("a@b.test", "pw") is None
+
+
+def test_password_grant_non_json_returns_none(monkeypatch):
+    import httpx
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: _Resp(200, raises=True))
+    assert _auth()._password_grant("a@b.test", "pw") is None
 
 
 # --- fail-safe factory / gate ---------------------------------------------------
