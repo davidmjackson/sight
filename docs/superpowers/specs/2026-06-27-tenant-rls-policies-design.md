@@ -28,6 +28,16 @@ app-sets-its-tenant wiring built here are exactly what B needs too, so B (the pr
 least-privilege role) is a clean forward-compatible follow-on (slice 7): it only swaps the
 connection role and drops FORCE. (Chosen 2026-06-27; B noted, not forgotten.)
 
+**Correction discovered via CI (2026-06-27):** RLS is bypassed by SUPERUSERS and the table OWNER,
+and `FORCE` subjects the owner but NOT a superuser. CI's `postgres` is a superuser, so it bypasses
+the policy entirely — and the live Supabase app role may too. So Option A's policy is *correct and
+proven* but does NOT actually protect the app while the app connects as the superuser/owner. Real
+enforcement requires the app to connect as a NON-superuser, NON-owner least-privilege role —
+i.e. Option B is not merely a "nicer" follow-on, it is REQUIRED to activate enforcement. This slice
+therefore ships the proven policy + GUC wiring (enforcement-ready); slice 7 (the least-privilege app
+role + the operator switching `DATABASE_URL` to it) flips it on with no further app code. The CI eval
+proves the policy bites by running the isolation check as a non-superuser probe role (`SET ROLE`).
+
 How the app announces its tenant
 --------------------------------
 A custom Postgres session setting (GUC) `app.tenant_id`. On connect, the app runs

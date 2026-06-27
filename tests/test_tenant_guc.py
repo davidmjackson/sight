@@ -2,11 +2,16 @@
 
 RLS enforcement itself needs real Postgres (CI `db` job + db/checks/rls_isolation.sql). These
 offline tests pin the APP side: both Postgres-backed stores must set the `app.tenant_id` session
-GUC immediately after connecting, so every query/insert is tenant-scoped by the database. We fake
-`psycopg.connect` so no real DB is touched.
+GUC immediately after connecting, so every query/insert is tenant-scoped by the database.
+
+psycopg lives only in the optional `[db]` extra, which the offline `lint-and-test` CI job does NOT
+install. The stores import psycopg lazily, so we inject a FAKE `psycopg` module into sys.modules
+(no real psycopg, no real DB needed) — this runs identically with or without psycopg installed.
 """
 
-import psycopg
+import sys
+import types
+
 import pytest
 
 from sprintsight.ingest.store import DEMO_TENANT_ID, PostgresStore
@@ -21,7 +26,7 @@ class FakeConn:
         self.calls.append((sql, params))
         return None
 
-    def cursor(self, *a, **k):  # pragma: no cover - not exercised here
+    def cursor(self, *a, **k):  # pragma: no cover - no query runs during __init__
         raise AssertionError("no query should run during __init__")
 
     def close(self):
@@ -37,7 +42,9 @@ def fake_connect(monkeypatch):
         conns.append(c)
         return c
 
-    monkeypatch.setattr(psycopg, "connect", _connect)
+    fake = types.ModuleType("psycopg")
+    fake.connect = _connect
+    monkeypatch.setitem(sys.modules, "psycopg", fake)
     return conns
 
 
