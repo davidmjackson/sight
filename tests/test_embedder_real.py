@@ -85,10 +85,12 @@ def _paraphrase_recall(embedder, k: int = 1) -> float:
 
 
 def test_lexical_standin_fails_paraphrase_recall():
-    # Baseline (always runs in CI): the hashing stand-in lands well below the bar the real model
-    # must clear (0.75), because it hashes whole strings and so cannot match paraphrases. This
-    # locks the gap the real embedder closes. (Deterministic: hashing is a pure function.)
-    assert _paraphrase_recall(HashingEmbedder(), k=1) < 0.75
+    # Baseline (always runs in CI): the hashing stand-in hashes whole strings, so it cannot match
+    # paraphrases and lands far below the bar the real model must clear (0.75). This locks the gap
+    # the real embedder closes. Deterministic (hashing is a pure function); the observed value for
+    # this fixture is exactly 0.25 (one accidental top-1 hit out of four). Pinned tight so a future
+    # fixture edit that lets the stand-in fluke more hits fails loudly, not weakening the gate.
+    assert _paraphrase_recall(HashingEmbedder(), k=1) <= 0.25
 
 
 @pytest.mark.skipif(

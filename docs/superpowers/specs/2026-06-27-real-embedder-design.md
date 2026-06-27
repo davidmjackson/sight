@@ -57,9 +57,17 @@ David asked me to decide the gates and proceed. The decisions and their reasons:
 Embeddings are only comparable if the SAME model produced both the stored chunk vectors and the
 query vector. If you ingest with `HashingEmbedder` but query with `LocalEmbedder` (or change the
 model id between ingest and query), every similarity score is meaningless and retrieval silently
-returns garbage. The env-driven factory makes both sides read one setting, so as long as the same
-`SPRINTSIGHT_EMBEDDER` (and model id) are set for the ingest run and the query run, they match. The
-runbook calls this out explicitly: change the embedder, re-ingest.
+returns garbage. TWO guards close this:
+1. The env-driven factory makes both sides read one setting, so the same `SPRINTSIGHT_EMBEDDER`
+   (and model id) drives the ingest run and the query run.
+2. The ingest dedup hash (`pipeline._content_hash`) folds in the embedder signature
+   (`embedder_signature`: class + model id + dim). Without this, re-ingesting against an
+   already-populated store (e.g. the slice-1 Supabase, loaded with `HashingEmbedder`) would skip
+   every artifact as "body unchanged" and leave stale vectors from the wrong model. With it,
+   switching the embedder changes the hash, so every artifact is re-embedded; same embedder stays
+   idempotent. (This was the blocking finding from the slice's independent review.)
+
+The runbook still states the rule plainly: change the embedder, re-ingest, and confirm `ingested>0`.
 
 ## Eval-first (the heart of the slice)
 

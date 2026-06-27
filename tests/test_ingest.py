@@ -43,3 +43,30 @@ def test_ingest_corpus_is_idempotent():
     assert second.skipped == 37
     assert second.chunks_written == 0
     assert store.counts() == counts_after_first  # no new rows
+
+
+class _OtherEmbedder:
+    """A distinct 1024-dim embedder (different signature) for the re-embed test."""
+
+    dim = 1024
+    model_id = "other-test-model"
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return [[0.0] * self.dim for _ in texts]
+
+
+def test_changing_embedder_forces_reembed_not_skip():
+    # The dedup hash includes the embedder signature, so switching embedders against an already
+    # populated store re-embeds every artifact (it must NOT silently skip and keep stale vectors).
+    store = InMemoryStore()
+    ingest_corpus(store, HashingEmbedder())
+
+    switched = ingest_corpus(store, _OtherEmbedder())
+    assert switched.skipped == 0
+    assert switched.ingested == 37
+    assert switched.chunks_written >= 37
+
+    # Idempotent again under the new embedder.
+    again = ingest_corpus(store, _OtherEmbedder())
+    assert again.ingested == 0
+    assert again.skipped == 37

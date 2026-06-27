@@ -11,8 +11,11 @@ Stored chunk vectors and a search query are only comparable if the SAME model ma
 
 > If you change the embedder (or its model id), you MUST re-ingest before you search.
 
-Mixing embedders does not error, it silently returns nonsense. The switch below is read by both the
-ingest step and the search step, so as long as you keep it set the same for both, you are safe.
+Mixing embedders does not error, it silently returns nonsense. Two safeguards make this hard to get
+wrong: the switch below is read by both the ingest step and the search step (so they always agree),
+and the ingest dedup hash now includes the embedder identity, so re-ingesting after a switch
+re-embeds every artifact instead of skipping it as "unchanged". You do NOT need to clear the table
+first. Just confirm the re-ingest actually did work (see step 3).
 
 ## Turn it on (synthetic data, against your Supabase)
 
@@ -24,7 +27,7 @@ column). First run downloads it (~1.3 GB) to the local cache; later runs are off
 ---
 
 ```bash
-pip install -e '.[embed,db]'
+.venv/bin/pip install -e '.[embed,db]'
 ```
 
 ---
@@ -47,6 +50,10 @@ DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supaba
 ```
 
 ---
+
+Check the printed `RESULT {...}` line shows `ingested` greater than 0 (e.g. `ingested: 37`). If it
+says `ingested: 0, skipped: 37` the switch did not take effect (the data is still on the old
+embedder) and search would be meaningless, so do not proceed until you see a non-zero ingest.
 
 4. Prove semantic search works on the real DB:
 

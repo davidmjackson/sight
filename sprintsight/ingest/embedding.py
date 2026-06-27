@@ -18,6 +18,7 @@ docs/embedder/real-embedder.md.
 import hashlib
 import math
 import os
+from collections.abc import Mapping
 from typing import Protocol
 
 EMBEDDING_DIM = 1024
@@ -79,7 +80,12 @@ class LocalEmbedder:
                 "(installs sentence-transformers)."
             ) from exc
         model = SentenceTransformer(self.model_id)
-        actual = model.get_sentence_embedding_dimension()
+        # sentence-transformers renamed get_sentence_embedding_dimension -> get_embedding_dimension;
+        # prefer the new name, fall back for older installs.
+        get_dim = getattr(model, "get_embedding_dimension", None) or (
+            model.get_sentence_embedding_dimension
+        )
+        actual = get_dim()
         if actual != self.dim:
             raise ValueError(
                 f"Embedding model {self.model_id!r} outputs {actual} dims, but the schema "
@@ -93,10 +99,22 @@ class LocalEmbedder:
         vectors = self._model.encode(
             list(texts), normalize_embeddings=True, convert_to_numpy=True
         )
-        return [v.tolist() for v in vectors]
+        return vectors.tolist()
 
 
-def make_embedder(env: dict[str, str] | None = None) -> Embedder:
+def embedder_signature(embedder: Embedder) -> str:
+    """Stable identity of an embedder, folded into the ingest dedup hash.
+
+    The pipeline skips an artifact whose stored hash matches, to stay idempotent. But the stored
+    vectors are only valid for the embedder that produced them, so the hash must change when the
+    embedder (or its model id / dim) changes — otherwise switching embedders against an already
+    populated store silently skips every artifact and leaves stale, incomparable vectors behind.
+    """
+    model_id = getattr(embedder, "model_id", "")
+    return f"{embedder.__class__.__name__}:{model_id}:{embedder.dim}"
+
+
+def make_embedder(env: Mapping[str, str] | None = None) -> Embedder:
     """Pick the embedder from the environment (offline-by-default, real model opt-in).
 
     `SPRINTSIGHT_EMBEDDER=local` selects the real `LocalEmbedder` (model id from
