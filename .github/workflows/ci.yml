@@ -46,6 +46,9 @@ jobs:
     env:
       PGPASSWORD: postgres
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sprintsight
+      # CI-only throwaway credentials for the least-privilege app role (slice 7). Not a real secret.
+      APP_RW_PASSWORD: app_rw_ci_password
+      APP_DATABASE_URL: postgresql://app_rw:app_rw_ci_password@localhost:5432/sprintsight
     steps:
       - uses: actions/checkout@v4
 
@@ -66,10 +69,19 @@ jobs:
             psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -f "$f"
           done
 
-      - name: Ingest corpus (first pass)
+      - name: Enable app_rw login (CI only; the real password lives in the deploy secret store)
+        run: psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -c "alter role app_rw with login password '$APP_RW_PASSWORD'"
+
+      # Ingest + retrieve run as the least-privilege app_rw role (slice 7), i.e. the real production
+      # path: a NON-superuser subject to RLS. This proves the app works under enforced isolation.
+      - name: Ingest corpus (first pass — as app_rw under enforced RLS)
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
         run: python scripts/ingest.py
 
       - name: Ingest corpus (second pass — must be idempotent)
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
         run: |
           out=$(python scripts/ingest.py)
           echo "$out"
@@ -104,5 +116,22 @@ jobs:
       - name: RLS tenant isolation (migration 0003 — cross-tenant no-leak proof)
         run: psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -f db/checks/rls_isolation.sql
 
-      - name: Retrieval smoke (pgvector search returns cited results)
+      - name: App role is subject to RLS (slice 7 — enforcement active for app_rw)
+        env:
+          PGPASSWORD: ${{ env.APP_RW_PASSWORD }}
+        run: |
+          # app_rw must NOT be able to bypass RLS.
+          super=$(psql -h localhost -U app_rw -d sprintsight -tAc "select rolsuper or rolbypassrls from pg_roles where rolname = current_user")
+          test "$super" = "f" || { echo "app_rw must not be superuser/bypassrls (got $super)"; exit 1; }
+          # No tenant GUC -> fail closed (0 rows).
+          n=$(psql -h localhost -U app_rw -d sprintsight -tAc "select count(*) from team")
+          test "$n" = "0" || { echo "expected 0 teams without a tenant GUC, got $n"; exit 1; }
+          # With the demo tenant set -> sees its 5 teams (RLS lets exactly this tenant through).
+          n=$(psql -h localhost -U app_rw -d sprintsight -tAc "select set_config('app.tenant_id','00000000-0000-0000-0000-000000000001',false); select count(*) from team" | tail -1)
+          test "$n" = "5" || { echo "expected 5 teams with the tenant GUC, got $n"; exit 1; }
+          echo "app_rw is subject to RLS and tenant-scoped"
+
+      - name: Retrieval smoke (pgvector search returns cited results — as app_rw)
+        env:
+          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
         run: python scripts/retrieve_smoke.py
