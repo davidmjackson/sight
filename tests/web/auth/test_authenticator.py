@@ -1,6 +1,4 @@
-import pytest
-
-from sprintsight.web.auth.users import SeedAuthenticator, SupabaseAuthenticator, User
+from sprintsight.web.auth.users import SeedAuthenticator, User
 
 
 def test_authenticate_valid_admin():
@@ -32,6 +30,5 @@ def test_all_users_returns_three_roles():
     assert roles == {"admin", "delivery_manager", "viewer"}
 
 
-def test_supabase_authenticator_is_deferred():
-    with pytest.raises(NotImplementedError):
-        SupabaseAuthenticator().authenticate("a@b.test", "x")
+# SupabaseAuthenticator is now a real provider (see test_supabase_auth.py); it is no longer a
+# deferred stub. The default authenticator stays SeedAuthenticator unless gated on.
