@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from sprintsight.evals.fixtures import Artifact, load_corpus
 from sprintsight.ingest.chunking import chunk_text
-from sprintsight.ingest.embedding import Embedder
+from sprintsight.ingest.embedding import Embedder, embedder_signature
 from sprintsight.ingest.store import ArtifactInput, Store
 
 
@@ -25,8 +25,10 @@ class IngestReport:
         }
 
 
-def _content_hash(body: str) -> str:
-    return hashlib.sha256(body.encode("utf-8")).hexdigest()
+def _content_hash(body: str, embedder_sig: str) -> str:
+    # The embedder signature is part of the key so changing the embedder invalidates the skip and
+    # forces a re-embed (stored vectors are only valid for the embedder that produced them).
+    return hashlib.sha256(f"{embedder_sig}\n{body}".encode()).hexdigest()
 
 
 def ingest_corpus(
@@ -37,16 +39,18 @@ def ingest_corpus(
 ) -> IngestReport:
     """Ingest every artifact into `store`, chunking + embedding changed ones only.
 
-    Idempotent: an artifact whose body hash matches what's already stored is skipped, so
-    re-running adds no rows.
+    Idempotent for a FIXED embedder: an artifact whose (embedder + body) hash matches what's
+    already stored is skipped, so re-running adds no rows. Changing the embedder changes the hash,
+    so every artifact is re-embedded (no stale, incomparable vectors left behind).
     """
     artifacts = load_corpus() if artifacts is None else artifacts
     report = IngestReport(artifacts_total=len(artifacts))
+    embedder_sig = embedder_signature(embedder)
 
     for art in artifacts.values():
         source_type = art.source_type
         source_ref = art.meta.get("source_ref", art.artifact_id)
-        content_hash = _content_hash(art.body)
+        content_hash = _content_hash(art.body, embedder_sig)
 
         if store.get_content_hash(source_type, source_ref) == content_hash:
             report.skipped += 1
