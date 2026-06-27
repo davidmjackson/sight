@@ -80,6 +80,9 @@ jobs:
         run: |
           psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -c "do \$\$
           begin
+            -- migration 0003 FORCEs RLS, so this owner session must announce its tenant first
+            -- (the demo tenant the corpus is ingested under) or every count would be 0.
+            perform set_config('app.tenant_id', '00000000-0000-0000-0000-000000000001', false);
             if (select count(*) from artifact) <> 37 then
               raise exception 'expected 37 artifacts, got %', (select count(*) from artifact);
             end if;
@@ -97,6 +100,9 @@ jobs:
                 (select count(*) from artifact where team_id is null);
             end if;
           end \$\$;"
+
+      - name: RLS tenant isolation (migration 0003 — cross-tenant no-leak proof)
+        run: psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -f db/checks/rls_isolation.sql
 
       - name: Retrieval smoke (pgvector search returns cited results)
         run: python scripts/retrieve_smoke.py
