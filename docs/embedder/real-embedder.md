@@ -55,6 +55,11 @@ Check the printed `RESULT {...}` line shows `ingested` greater than 0 (e.g. `ing
 says `ingested: 0, skipped: 37` the switch did not take effect (the data is still on the old
 embedder) and search would be meaningless, so do not proceed until you see a non-zero ingest.
 
+This same re-ingest also backfills `artifact.team_id` (real-wiring slice 3): the team rows are
+created and every artifact is linked to its team on this pass, so you get the real vectors and the
+team links together. (On a DB that already holds the artifacts, team_id is only set when the
+artifact is actually re-ingested, which the embedder switch forces here.)
+
 4. Prove semantic search works on the real DB:
 
 ---

@@ -26,9 +26,12 @@ def main() -> int:
         print("DATABASE_URL not set")
         return 2
 
+    embedder = make_embedder()
     retriever = PostgresRetriever(dsn)
     try:
-        results = retriever.search("dependency slipped auth api blocked", make_embedder(), k=5)
+        results = retriever.search("dependency slipped auth api blocked", embedder, k=5)
+        # Team scoping (slice 3): a team-scoped search returns only that team's chunks.
+        scoped = retriever.search("sprint status update", embedder, k=5, team="Atlas")
     finally:
         retriever.close()
 
@@ -45,9 +48,18 @@ def main() -> int:
         print(f"FAIL: results not ranked by score: {scores}")
         return 1
 
+    if not scoped:
+        print("FAIL: team-scoped retrieval returned no results (team_id not populated?)")
+        return 1
+    off_team = [r.team for r in scoped if r.team != "Atlas"]
+    if off_team:
+        print(f"FAIL: team-scoped search leaked other teams: {off_team}")
+        return 1
+
     print(
-        f"OK — retrieved {len(results)} chunks with provenance; "
-        f"top source_ref={results[0].source_ref}"
+        f"OK — retrieved {len(results)} chunks with provenance "
+        f"(top source_ref={results[0].source_ref}); "
+        f"team-scoped search returned {len(scoped)} Atlas-only chunks"
     )
     return 0
 

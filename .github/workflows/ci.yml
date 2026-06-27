@@ -76,7 +76,7 @@ jobs:
           echo "$out" | grep -q '"ingested": 0' || { echo "NOT IDEMPOTENT"; exit 1; }
           echo "$out" | grep -q '"skipped": 37' || { echo "EXPECTED 37 SKIPPED"; exit 1; }
 
-      - name: Verify rows (37 artifacts, chunks embedded)
+      - name: Verify rows (37 artifacts, chunks embedded, teams linked)
         run: |
           psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -c "do \$\$
           begin
@@ -88,6 +88,13 @@ jobs:
             end if;
             if (select count(*) from chunk where embedding is null) > 0 then
               raise exception 'found chunks with null embedding';
+            end if;
+            if (select count(*) from team) <> 5 then
+              raise exception 'expected 5 teams, got %', (select count(*) from team);
+            end if;
+            if (select count(*) from artifact where team_id is null) > 0 then
+              raise exception 'found % artifacts with null team_id',
+                (select count(*) from artifact where team_id is null);
             end if;
           end \$\$;"
 
