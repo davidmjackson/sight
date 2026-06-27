@@ -27,6 +27,12 @@ eval = [
 db = [
   "psycopg[binary]>=3",
 ]
+# Real in-region embedding model (decision D1). sentence-transformers is imported lazily in
+# sprintsight/ingest/embedding.py (LocalEmbedder); CI + offline runs never need it. Opt in with
+# SPRINTSIGHT_EMBEDDER=local. See docs/embedder/real-embedder.md.
+embed = [
+  "sentence-transformers>=3",
+]
 # Live connector runtime SDKs (imported lazily in sprintsight/connect/; tests never need them).
 # Composio drives the live Jira read; PyGithub drives the live GitHub read. See
 # docs/connectors/live-run.md for the one-step live-run commands. The exact Composio

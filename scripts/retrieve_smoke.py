@@ -2,16 +2,18 @@
 
     DATABASE_URL=postgresql://... .venv/bin/python scripts/retrieve_smoke.py
 
-Embeds a query with the offline HashingEmbedder, runs a cosine-distance search, and asserts
-it returns ranked results carrying provenance. Proves the pgvector search + artifact join
-work on a real database. Exits non-zero on failure.
+Embeds a query with `make_embedder()` (offline HashingEmbedder by default;
+SPRINTSIGHT_EMBEDDER=local for the real in-region model), runs a cosine-distance search, and
+asserts it returns ranked results carrying provenance. Proves the pgvector search + artifact join
+work on a real database. Use the SAME embedder the data was ingested with. Exits non-zero on
+failure.
 """
 
 import os
 import sys
 
 from sprintsight.config import load_env
-from sprintsight.ingest.embedding import HashingEmbedder
+from sprintsight.ingest.embedding import make_embedder
 from sprintsight.retrieval.postgres import PostgresRetriever
 
 VALID_SOURCE_TYPES = {"jira", "confluence", "slack", "raid", "other"}
@@ -26,7 +28,7 @@ def main() -> int:
 
     retriever = PostgresRetriever(dsn)
     try:
-        results = retriever.search("dependency slipped auth api blocked", HashingEmbedder(), k=5)
+        results = retriever.search("dependency slipped auth api blocked", make_embedder(), k=5)
     finally:
         retriever.close()
 
