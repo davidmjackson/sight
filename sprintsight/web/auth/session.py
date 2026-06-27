@@ -65,7 +65,11 @@ def issue_csrf(request: Request) -> str:
 def valid_csrf(request: Request, token: str) -> bool:
     """True iff `token` matches this session's CSRF token (constant-time). Fails closed."""
     expected = request.session.get(CSRF_KEY)
-    return bool(expected) and bool(token) and secrets.compare_digest(token, expected)
+    if not expected or not token:
+        return False
+    # Compare as bytes: compare_digest raises TypeError on a non-ASCII str, which would turn a
+    # forged token into a 500 instead of a clean rejection.
+    return secrets.compare_digest(token.encode(), expected.encode())
 
 
 def require_api_user(request: Request) -> User:

@@ -68,6 +68,16 @@ def test_token_is_tied_to_its_own_session():
     assert resp.status_code == 400  # a's token is not valid in b's session
 
 
+def test_non_ascii_token_rejected_cleanly():
+    """A non-ASCII forged token must fail closed as 400, not crash with a 500."""
+    client = _client()
+    client.get("/login")
+    resp = client.post(
+        "/login", data={**ADMIN, "csrf_token": "é-forged-tøken"}, follow_redirects=False
+    )
+    assert resp.status_code == 400
+
+
 def test_csrf_checked_before_password():
     """A bad token with a WRONG password still fails as CSRF (400), not as auth (200)."""
     client = _client()
