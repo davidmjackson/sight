@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from sprintsight.evals.fixtures import Artifact, artifacts_for
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.builder import graph_detector
+from sprintsight.ingest.embedding import make_embedder
 from sprintsight.report.audience import PROFILES
 from sprintsight.report.llm_writer import make_llm_writer
 from sprintsight.report.render import heading_for
@@ -70,6 +71,56 @@ def _active_writer() -> ReportWriter:
     return _writer
 
 
+# --- DB-backed evidence read (real-wiring slice 4), fail-safe and off by default ---
+_DB_FLAG = "SPRINTSIGHT_WEB_DB"
+
+
+def _db_enabled() -> bool:
+    """True only when the DB read is deliberately on AND a DATABASE_URL is set (fail-safe)."""
+    return os.environ.get(_DB_FLAG) == "on" and bool(os.environ.get("DATABASE_URL"))
+
+
+def _make_retriever():
+    """Build the production retriever. Seam: tests inject a fake; psycopg stays lazy until here."""
+    from sprintsight.retrieval.postgres import PostgresRetriever
+
+    return PostgresRetriever(os.environ["DATABASE_URL"])
+
+
+def db_knowledge_for(team: str, k: int = 5) -> list["KnowledgeItem"]:
+    """Cited evidence for one team, read from the live DB and team-scoped (slice-3 team_id).
+
+    Off by default: returns [] unless the gate is open. Fail-safe: any error (no DB, bad creds,
+    query failure) is logged and yields [], so the page never 500s on a DB problem.
+    """
+    if not _db_enabled():
+        return []
+    query = f"{team} sprint {CURRENT_SPRINT} status risks blockers burndown"
+    retriever = None
+    try:
+        retriever = _make_retriever()
+        chunks = retriever.search(query, make_embedder(), k=k, team=team)
+        return [_knowledge_item(c) for c in chunks]
+    except Exception:
+        logging.exception("DB knowledge read failed for team %s", team)
+        return []
+    finally:
+        if retriever is not None:
+            retriever.close()
+
+
+def _knowledge_item(chunk) -> "KnowledgeItem":
+    snippet = chunk.text.strip().splitlines()[0][:200] if chunk.text.strip() else ""
+    label = _SOURCE_LABELS.get(chunk.source_type, chunk.source_type.title() or "Artifact")
+    return KnowledgeItem(
+        source_type=chunk.source_type,
+        source_ref=chunk.source_ref,
+        title=label,
+        snippet=snippet,
+        score=round(float(chunk.score), 2),
+    )
+
+
 _report_cache: dict[tuple[str, str], tuple[list["ReportSection"], list["EvidenceItem"], bool]] = {}
 
 
@@ -102,6 +153,17 @@ class EvidenceItem:
 
 
 @dataclass(frozen=True)
+class KnowledgeItem:
+    """One cited chunk read from the live DB for the team drill-in (slice 4)."""
+
+    source_type: str
+    source_ref: str
+    title: str
+    snippet: str
+    score: float
+
+
+@dataclass(frozen=True)
 class TeamRow:
     team: str
     reported_status: str
@@ -126,6 +188,7 @@ class TeamDetail:
     report_sections: list[ReportSection] = field(default_factory=list)
     report_sources: list[EvidenceItem] = field(default_factory=list)
     report_insufficient: bool = False
+    db_knowledge: list[KnowledgeItem] = field(default_factory=list)
 
 
 def portfolio() -> list[TeamRow]:
@@ -167,9 +230,10 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
     if team is None:
         return None
     audience = normalize_audience(audience)
+    knowledge = db_knowledge_for(team)
     verdict = _verdict_or_none(team)
     if verdict is None:
-        return _insufficient_detail(team, audience)
+        return _insufficient_detail(team, audience, knowledge)
     arts = artifacts_for(team, _SPRINTS)
     sections, sources, insufficient = _report_for(team, audience, arts)
     return TeamDetail(
@@ -186,6 +250,7 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
         report_sections=sections,
         report_sources=sources,
         report_insufficient=insufficient,
+        db_knowledge=knowledge,
     )
 
 
@@ -288,7 +353,11 @@ def _insufficient_row(team: str) -> TeamRow:
     )
 
 
-def _insufficient_detail(team: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail:
+def _insufficient_detail(
+    team: str,
+    audience: str = DEFAULT_AUDIENCE,
+    knowledge: list[KnowledgeItem] | None = None,
+) -> TeamDetail:
     return TeamDetail(
         team=team,
         reported_status="unknown",
@@ -303,4 +372,5 @@ def _insufficient_detail(team: str, audience: str = DEFAULT_AUDIENCE) -> TeamDet
         report_sections=[],
         report_sources=[],
         report_insufficient=True,
+        db_knowledge=knowledge or [],
     )
