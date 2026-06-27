@@ -106,6 +106,8 @@ tr.watermelon { background: var(--red-tint); }
 .badge-ok { background: var(--accent-tint); color: var(--accent-ink); }
 .badge-muted { background: #f2f4f7; color: var(--muted); }
 .badge-stalled { background: #fdf3e3; color: #8a5a00; }
+.badge-live { background: var(--accent-tint); color: var(--accent-ink); }
+.kb-score { font-size: .78rem; color: var(--muted); margin-left: .4rem; }
 
 /* team drill-in */
 .back { font-size: 13px; color: var(--accent); text-decoration: none; }
