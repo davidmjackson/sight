@@ -27,12 +27,14 @@ class PostgresRetriever:
     ) -> list[RetrievedChunk]:
         emb = embedder.embed([query])[0]
         vec = "[" + ",".join(repr(x) for x in emb) + "]"
-        where = ""
-        params: list[object] = [vec]
+        # Always tenant-scoped (single-tenant today; one less edit when RLS/multi-tenant lands).
+        params: list[object] = [vec, self.tenant_id]
+        conditions = ["a.tenant_id = %s"]
         if team is not None:
-            # Scope to one team (by key, within the tenant). team_id is populated at ingest.
-            where = "where t.key = %s and a.tenant_id = %s"
-            params += [team, self.tenant_id]
+            # Scope to one team by key. team_id is populated at ingest (slice 3).
+            conditions.append("t.key = %s")
+            params.append(team)
+        where = "where " + " and ".join(conditions)
         params += [vec, k]
         with self._conn.cursor() as cur:
             cur.execute(
