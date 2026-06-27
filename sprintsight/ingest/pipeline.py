@@ -47,6 +47,13 @@ def ingest_corpus(
     report = IngestReport(artifacts_total=len(artifacts))
     embedder_sig = embedder_signature(embedder)
 
+    # Ensure team rows exist and map each team key to its id, BEFORE the artifact loop, so teams
+    # are present even when every artifact is skipped (unchanged). Artifacts link to their team.
+    team_ids = {
+        team: store.upsert_team(team, team)
+        for team in sorted({art.team for art in artifacts.values()})
+    }
+
     for art in artifacts.values():
         source_type = art.source_type
         source_ref = art.meta.get("source_ref", art.artifact_id)
@@ -65,6 +72,7 @@ def ingest_corpus(
                 author=art.meta.get("author"),
                 source_timestamp=art.meta.get("source_timestamp"),
                 content_hash=content_hash,
+                team_id=team_ids[art.team],
             )
         )
 

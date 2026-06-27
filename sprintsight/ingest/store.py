@@ -23,6 +23,7 @@ class ArtifactInput:
     author: str | None
     source_timestamp: str | None
     content_hash: str
+    team_id: str | None = None
 
 
 # (Chunk, embedding) pairs to write for an artifact.
@@ -30,6 +31,7 @@ EmbeddedChunk = tuple[object, list[float]]
 
 
 class Store(Protocol):
+    def upsert_team(self, key: str, name: str) -> str: ...
     def get_content_hash(self, source_type: str, source_ref: str) -> str | None: ...
     def upsert_artifact(self, art: ArtifactInput) -> str: ...
     def replace_chunks(self, artifact_id: str, chunks: list[EmbeddedChunk]) -> int: ...
@@ -44,7 +46,13 @@ class InMemoryStore:
     tenant_id: str = DEMO_TENANT_ID
     _artifacts: dict[tuple[str, str], dict] = field(default_factory=dict)
     _chunks: dict[str, list[dict]] = field(default_factory=dict)
+    _teams: dict[str, str] = field(default_factory=dict)  # team key -> team id
     _seq: int = 0
+
+    def upsert_team(self, key: str, name: str) -> str:
+        if key not in self._teams:
+            self._teams[key] = self._next_id()
+        return self._teams[key]
 
     def get_content_hash(self, source_type: str, source_ref: str) -> str | None:
         row = self._artifacts.get((source_type, source_ref))
@@ -59,8 +67,22 @@ class InMemoryStore:
             "content_hash": art.content_hash,
             "title": art.title,
             "body": art.body,
+            "team_id": art.team_id,
         }
         return artifact_id
+
+    # --- read accessors (used by tests / offline inspection) ---
+    def team_keys(self) -> list[str]:
+        return list(self._teams)
+
+    def team_index(self) -> dict[str, str]:
+        return dict(self._teams)
+
+    def artifacts(self):
+        return list(self._artifacts.values())
+
+    def artifact(self, source_type: str, source_ref: str) -> dict | None:
+        return self._artifacts.get((source_type, source_ref))
 
     def replace_chunks(self, artifact_id: str, chunks: list[EmbeddedChunk]) -> int:
         self._chunks[artifact_id] = [
@@ -77,6 +99,7 @@ class InMemoryStore:
 
     def counts(self) -> dict[str, int]:
         return {
+            "team": len(self._teams),
             "artifact": len(self._artifacts),
             "chunk": sum(len(v) for v in self._chunks.values()),
         }
@@ -100,6 +123,19 @@ class PostgresStore:
         self.tenant_id = tenant_id
         self._conn = psycopg.connect(dsn, autocommit=True)
 
+    def upsert_team(self, key: str, name: str) -> str:
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                insert into team (key, name, tenant_id)
+                values (%s, %s, %s)
+                on conflict (tenant_id, key) do update set name = excluded.name
+                returning id
+                """,
+                (key, name, self.tenant_id),
+            )
+            return str(cur.fetchone()[0])
+
     def get_content_hash(self, source_type: str, source_ref: str) -> str | None:
         with self._conn.cursor() as cur:
             cur.execute(
@@ -116,14 +152,15 @@ class PostgresStore:
                 """
                 insert into artifact
                   (source_type, source_ref, title, body, author, source_timestamp,
-                   content_hash, tenant_id)
-                values (%s::source_type, %s, %s, %s, %s, %s::timestamptz, %s, %s)
+                   content_hash, team_id, tenant_id)
+                values (%s::source_type, %s, %s, %s, %s, %s::timestamptz, %s, %s, %s)
                 on conflict (tenant_id, source_type, source_ref) do update set
                   title = excluded.title,
                   body = excluded.body,
                   author = excluded.author,
                   source_timestamp = excluded.source_timestamp,
                   content_hash = excluded.content_hash,
+                  team_id = excluded.team_id,
                   ingested_at = now()
                 returning id
                 """,
@@ -135,6 +172,7 @@ class PostgresStore:
                     art.author,
                     art.source_timestamp,
                     art.content_hash,
+                    art.team_id,
                     self.tenant_id,
                 ),
             )
@@ -164,11 +202,13 @@ class PostgresStore:
 
     def counts(self) -> dict[str, int]:
         with self._conn.cursor() as cur:
+            cur.execute("select count(*) from team")
+            teams = cur.fetchone()[0]
             cur.execute("select count(*) from artifact")
             artifacts = cur.fetchone()[0]
             cur.execute("select count(*) from chunk")
             chunks = cur.fetchone()[0]
-        return {"artifact": artifacts, "chunk": chunks}
+        return {"team": teams, "artifact": artifacts, "chunk": chunks}
 
     def close(self) -> None:
         self._conn.close()
