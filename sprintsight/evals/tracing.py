@@ -1,10 +1,11 @@
 """Optional Langfuse tracing for eval runs (Langfuse SDK v4).
 
 Langfuse is the observability/eval backend (per the stack). Wiring is kept strictly
-optional: with no credentials configured — or the package not installed — the harness
-uses a no-op tracer so evals run identically in CI. When LANGFUSE_PUBLIC_KEY /
-LANGFUSE_SECRET_KEY (and optionally LANGFUSE_HOST) are set, runs are traced; the v4
-client reads those env vars itself.
+optional AND opt-in: tracing is off unless SPRINTSIGHT_TRACE=on AND LANGFUSE_PUBLIC_KEY /
+LANGFUSE_SECRET_KEY are set (the v4 client reads the keys itself). Without all three —
+or with the package not installed — the harness uses a no-op tracer, so evals run
+identically in CI and a developer's .env keys do not silently ship events (and burn the
+Langfuse free-tier quota) on every local run. Flip the flag on only to inspect a run.
 """
 
 import os
@@ -49,13 +50,21 @@ class LangfuseTracer:
             flush()
 
 
-def _configured() -> bool:
-    return bool(os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"))
+_TRACE_FLAG = "SPRINTSIGHT_TRACE"
+
+
+def _enabled() -> bool:
+    """Opt-in: trace only when the flag is on AND both Langfuse keys are present (fail-safe)."""
+    return (
+        os.getenv(_TRACE_FLAG) == "on"
+        and bool(os.getenv("LANGFUSE_PUBLIC_KEY"))
+        and bool(os.getenv("LANGFUSE_SECRET_KEY"))
+    )
 
 
 def get_tracer() -> Tracer:
-    """Return a Langfuse-backed tracer if configured and installed, else a no-op tracer."""
-    if not _configured():
+    """Return a Langfuse-backed tracer only when explicitly enabled + installed, else a no-op."""
+    if not _enabled():
         return NoOpTracer()
     try:
         from langfuse import get_client  # type: ignore[import-not-found]
