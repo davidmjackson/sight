@@ -13,11 +13,13 @@ from sprintsight.config import load_env
 from sprintsight.web import crosstool_service, service
 from sprintsight.web.auth.session import (
     is_dev,
+    issue_csrf,
     login_session,
     logout_session,
     require_api_user,
     session_secret,
     session_user,
+    valid_csrf,
 )
 from sprintsight.web.auth.users import SeedAuthenticator, User
 
@@ -40,19 +42,35 @@ def create_app() -> FastAPI:
     @app.get("/login", response_class=HTMLResponse)
     def page_login(request: Request) -> HTMLResponse:
         return _TEMPLATES.TemplateResponse(
-            request, "login.html", {"error": None, "user": None}
+            request, "login.html", {"error": None, "user": None, "csrf_token": issue_csrf(request)}
         )
 
     @app.post("/login")
     def do_login(
-        request: Request, email: str = Form(...), password: str = Form(...)
+        request: Request,
+        email: str = Form(...),
+        password: str = Form(...),
+        csrf_token: str = Form(""),
     ):
+        # CSRF guard runs BEFORE authentication, so a forged POST never probes credentials.
+        if not valid_csrf(request, csrf_token):
+            return _TEMPLATES.TemplateResponse(
+                request,
+                "login.html",
+                {
+                    "error": "Your session expired. Please try again.",
+                    "user": None,
+                    "csrf_token": issue_csrf(request),
+                },
+                status_code=400,
+            )
         user = authenticator.authenticate(email, password)
         if user is None:
             return _TEMPLATES.TemplateResponse(
                 request,
                 "login.html",
-                {"error": "Invalid email or password.", "user": None},
+                {"error": "Invalid email or password.", "user": None,
+                 "csrf_token": issue_csrf(request)},
                 status_code=200,
             )
         login_session(request, user)

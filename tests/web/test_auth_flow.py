@@ -3,6 +3,8 @@ from fastapi.testclient import TestClient
 
 from sprintsight.web.app import create_app
 
+from .conftest import csrf_token
+
 
 def _client():
     return TestClient(create_app())
@@ -19,7 +21,11 @@ def test_login_valid_redirects_and_sets_session_cookie():
     client = _client()
     resp = client.post(
         "/login",
-        data={"email": "admin@sprintsight.test", "password": "admin-watermelon"},
+        data={
+            "email": "admin@sprintsight.test",
+            "password": "admin-watermelon",
+            "csrf_token": csrf_token(client),
+        },
         follow_redirects=False,
     )
     assert resp.status_code == 303
@@ -31,7 +37,11 @@ def test_login_wrong_password_shows_error_no_session():
     client = _client()
     resp = client.post(
         "/login",
-        data={"email": "admin@sprintsight.test", "password": "wrong"},
+        data={
+            "email": "admin@sprintsight.test",
+            "password": "wrong",
+            "csrf_token": csrf_token(client),
+        },
         follow_redirects=False,
     )
     assert resp.status_code == 200
@@ -43,7 +53,11 @@ def test_logout_clears_session():
     client = _client()
     client.post(
         "/login",
-        data={"email": "admin@sprintsight.test", "password": "admin-watermelon"},
+        data={
+            "email": "admin@sprintsight.test",
+            "password": "admin-watermelon",
+            "csrf_token": csrf_token(client),
+        },
         follow_redirects=False,
     )
     resp = client.get("/logout", follow_redirects=False)
