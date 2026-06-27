@@ -21,7 +21,7 @@ from sprintsight.web.auth.session import (
     session_user,
     valid_csrf,
 )
-from sprintsight.web.auth.users import SeedAuthenticator, User
+from sprintsight.web.auth.users import User, make_authenticator
 
 _HERE = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
         https_only=not is_dev(),
     )
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
-    authenticator = SeedAuthenticator()
+    authenticator = make_authenticator()
 
     @app.get("/login", response_class=HTMLResponse)
     def page_login(request: Request) -> HTMLResponse:

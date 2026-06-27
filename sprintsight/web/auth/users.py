@@ -8,6 +8,8 @@ edge, not the web app.
 
 from __future__ import annotations
 
+import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -28,6 +30,7 @@ class User:
 
 class Authenticator(Protocol):
     def authenticate(self, email: str, password: str) -> User | None: ...
+    def all_users(self) -> list[User]: ...
 
 
 @dataclass(frozen=True)
@@ -62,10 +65,85 @@ class SeedAuthenticator:
         return [User(email=r.email, role=r.role) for r in self._records.values()]
 
 
+def _role_from(user: dict) -> str:
+    """Resolve the app role from a Supabase user. SECURITY: read ONLY app_metadata (admin-set);
+    user_metadata is user-editable, so honoring a role there would let a user self-escalate.
+    Unknown/absent -> the least-privileged role."""
+    role = (user.get("app_metadata") or {}).get("role")
+    return role if role in ROLES else "viewer"
+
+
+def _user_from_auth(data: dict) -> User | None:
+    """Pure map of a GoTrue token response to our User, or None if it is not a usable object.
+    Guards non-dict shapes so a malformed 200 body fails closed instead of raising."""
+    if not isinstance(data, dict):
+        return None
+    user = data.get("user")
+    if not isinstance(user, dict):
+        return None
+    email = user.get("email")
+    if not email:
+        return None
+    return User(email=email, role=_role_from(user))
+
+
+@dataclass(frozen=True)
 class SupabaseAuthenticator:
-    """Deferred real provider (ADR-0002). Not wired in this slice."""
+    """Verifies credentials against Supabase Auth (GoTrue) via the anon password grant, returning
+    our User. The network call is walled off in `_password_grant`; everything else is pure and
+    fails closed. We do not store the Supabase JWT — the app keeps its own signed session."""
+
+    base_url: str
+    anon_key: str
 
     def authenticate(self, email: str, password: str) -> User | None:
-        raise NotImplementedError(
-            "Supabase Auth is deferred; SeedAuthenticator is the offline stand-in."
-        )
+        data = self._password_grant(email, password)
+        if data is None:
+            return None
+        return _user_from_auth(data)
+
+    def all_users(self) -> list[User]:
+        # Accounts are managed in Supabase; admin-listing via the admin API is deferred.
+        return []
+
+    def _password_grant(self, email: str, password: str) -> dict | None:
+        """The ONLY network call: POST the GoTrue password grant with the anon key. Returns the
+        parsed JSON on 200, else None (bad creds / unconfirmed / error) so login fails closed."""
+        import httpx  # lazy: only when a real Supabase login is attempted
+
+        url = self.base_url.rstrip("/") + "/auth/v1/token?grant_type=password"
+        try:
+            resp = httpx.post(
+                url,
+                headers={"apikey": self.anon_key, "Content-Type": "application/json"},
+                json={"email": email, "password": password},
+                timeout=10.0,
+            )
+        except Exception:
+            logging.exception("Supabase auth request failed")
+            return None
+        if resp.status_code != 200:
+            return None
+        try:
+            return resp.json()
+        except ValueError:
+            return None
+
+
+_AUTH_FLAG = "SPRINTSIGHT_AUTH"
+
+
+def _supabase_configured() -> bool:
+    """True only when Supabase auth is selected AND its creds are present (fail-safe)."""
+    return (
+        os.getenv(_AUTH_FLAG) == "supabase"
+        and bool(os.getenv("SUPABASE_URL"))
+        and bool(os.getenv("SUPABASE_ANON_KEY"))
+    )
+
+
+def make_authenticator() -> Authenticator:
+    """The active authenticator: Supabase when gated on, else the offline seed default."""
+    if _supabase_configured():
+        return SupabaseAuthenticator(os.environ["SUPABASE_URL"], os.environ["SUPABASE_ANON_KEY"])
+    return SeedAuthenticator()
