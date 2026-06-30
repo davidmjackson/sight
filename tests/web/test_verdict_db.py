@@ -60,3 +60,36 @@ def test_empty_db_falls_back_to_corpus(monkeypatch):
     monkeypatch.setattr(svc, "_make_artifact_source", lambda: _FakeSource({}))
     arts = svc._artifacts_for("Atlas")
     assert "burndown-atlas-s15" in arts  # un-backfilled DB -> corpus
+
+
+def test_team_detail_fetches_artifacts_once(monkeypatch):
+    """team_detail derives the verdict, report, and evidence from a SINGLE artifact fetch,
+    so it never makes a second DB round-trip when the verdict-DB gate is on."""
+    real = svc._artifacts_for
+    calls: list[str] = []
+
+    def _counting(team):
+        calls.append(team)
+        return real(team)
+
+    monkeypatch.setattr(svc, "_artifacts_for", _counting)
+    detail = svc.team_detail("atlas")
+    assert detail is not None and detail.has_verdict
+    assert calls == ["Atlas"]  # exactly one fetch, not two
+
+
+def test_team_detail_with_gate_on_makes_one_db_round_trip(monkeypatch):
+    """With the verdict-DB gate ON, team_detail builds the DB artifact source exactly once,
+    directly demonstrating the saved round-trip (it used to fetch twice)."""
+    monkeypatch.setenv("SPRINTSIGHT_VERDICT_DB", "on")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
+    built: list[int] = []
+
+    def _make():
+        built.append(1)
+        return _FakeSource(svc.artifacts_for("Atlas", svc._SPRINTS))  # full set -> verdict
+
+    monkeypatch.setattr(svc, "_make_artifact_source", _make)
+    detail = svc.team_detail("atlas")
+    assert detail is not None and detail.has_verdict
+    assert len(built) == 1  # one DB round-trip, not two

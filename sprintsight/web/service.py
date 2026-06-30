@@ -266,10 +266,10 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
         return None
     audience = normalize_audience(audience)
     knowledge = db_knowledge_for(team)
-    verdict = _verdict_or_none(team)
+    arts = _artifacts_for(team)  # fetched once; reused for verdict, report, and evidence
+    verdict = _verdict_from_arts(team, arts)
     if verdict is None:
         return _insufficient_detail(team, audience, knowledge)
-    arts = _artifacts_for(team)
     sections, sources, insufficient = _report_for(team, audience, arts)
     return TeamDetail(
         team=team,
@@ -291,7 +291,12 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
 
 def _verdict_or_none(team: str) -> Verdict | None:
     """Run the detector, or return None when the team has too little data to judge."""
-    arts = _artifacts_for(team)
+    return _verdict_from_arts(team, _artifacts_for(team))
+
+
+def _verdict_from_arts(team: str, arts: dict[str, Artifact]) -> Verdict | None:
+    """Run the detector on already-fetched artifacts (so a caller that already holds them,
+    like team_detail, need not fetch a second time). None when too little data to judge."""
     if not _has_minimum(team, arts):
         return None
     try:

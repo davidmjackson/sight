@@ -11,10 +11,12 @@ SUITE = Path("/var/www/suite/shared/theme")
 VENDORED = Path(__file__).resolve().parents[2] / "sprintsight" / "web" / "static" / "theme"
 
 # (suite-relative path, vendored-relative path) for each byte-identical copied asset.
+# We vendor only the suite assets Sprintsight actually uses, so the suite's glyphs.svg
+# icon sprite is intentionally NOT copied (the brand uses its own sprintsight.svg reticle);
+# a re-sync from the suite can re-introduce it harmlessly without tripping this guard.
 PAIRS = [
     ("instrument-core.css", "css/instrument-core.css"),
     ("oscilloscope.js", "js/oscilloscope.js"),
-    ("glyphs.svg", "illos/glyphs.svg"),
     ("fonts/bricolage-grotesque-700.woff2", "fonts/bricolage-grotesque-700.woff2"),
     ("fonts/hanken-grotesk-400.woff2", "fonts/hanken-grotesk-400.woff2"),
     ("fonts/hanken-grotesk-500.woff2", "fonts/hanken-grotesk-500.woff2"),
