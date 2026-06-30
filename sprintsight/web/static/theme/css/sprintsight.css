@@ -15,7 +15,8 @@
   --rag-unknown:oklch(0.62 0.01 250);
 }
 
-/* accent overrides for instrument primitives that hardcode --green */
+/* accent overrides for instrument primitives that hardcode --green (or --teal) */
+.ins[data-app="sprintsight"] .eyebrow{color:var(--accent);}
 .ins[data-app="sprintsight"] .brand .mk{color:var(--accent);}
 .ins[data-app="sprintsight"] .waves{color:var(--accent);}
 .ins[data-app="sprintsight"] .btn-pri{background:var(--accent); color:#fff;}

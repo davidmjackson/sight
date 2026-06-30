@@ -6,7 +6,6 @@ import pytest
     [
         "/css/instrument-core.css",
         "/js/oscilloscope.js",
-        "/illos/glyphs.svg",
         "/illos/sprintsight.svg",
         "/fonts/hanken-grotesk-400.woff2",
     ],
