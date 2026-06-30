@@ -113,6 +113,12 @@ jobs:
             end if;
           end \$\$;"
 
+      - name: Assert functional_id populated (verdict-off-DB slice)
+        run: |
+          out=$(psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -tA -f db/checks/functional_id_present.sql)
+          echo "null_functional_id|null_sprint: $out"
+          echo "$out" | grep -qE '^0\|0$' || { echo "FAIL: artifacts with null functional_id or sprint (got: $out)"; exit 1; }
+
       - name: RLS tenant isolation (migration 0003 — cross-tenant no-leak proof)
         run: psql -h localhost -U postgres -d sprintsight -v ON_ERROR_STOP=1 -f db/checks/rls_isolation.sql
 
