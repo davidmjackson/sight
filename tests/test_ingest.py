@@ -45,6 +45,55 @@ def test_ingest_corpus_is_idempotent():
     assert store.counts() == counts_after_first  # no new rows
 
 
+def test_ingest_persists_functional_id_and_sprint():
+    from sprintsight.evals.fixtures import Artifact
+    from sprintsight.ingest.embedding import HashingEmbedder
+    from sprintsight.ingest.pipeline import ingest_corpus
+    from sprintsight.ingest.store import InMemoryStore
+
+    arts = {
+        "status-atlas-s15": Artifact(
+            artifact_id="status-atlas-s15", source_type="confluence", team="Atlas",
+            sprint=15, meta={"source_ref": "ATLAS-STATUS-S15"}, body="Overall status: green",
+        ),
+    }
+    store = InMemoryStore()
+    ingest_corpus(store, HashingEmbedder(), artifacts=arts)
+
+    row = store.artifact("confluence", "ATLAS-STATUS-S15")
+    assert row is not None
+    assert row["functional_id"] == "status-atlas-s15"
+    assert row["sprint"] == 15
+
+
+def test_reingest_backfills_after_hash_format_change():
+    # A store populated under the OLD hash (body+embedder only) must NOT be skipped once the hash
+    # folds in functional_id/sprint; it re-ingests so the new columns get populated.
+    import hashlib
+
+    from sprintsight.evals.fixtures import Artifact
+    from sprintsight.ingest.embedding import HashingEmbedder, embedder_signature
+    from sprintsight.ingest.pipeline import ingest_corpus
+    from sprintsight.ingest.store import ArtifactInput, InMemoryStore
+
+    art = Artifact(
+        artifact_id="status-atlas-s15", source_type="confluence", team="Atlas", sprint=15,
+        meta={"source_ref": "ATLAS-STATUS-S15"}, body="Overall status: green",
+    )
+    sig = embedder_signature(HashingEmbedder())
+    old_hash = hashlib.sha256(f"{sig}\n{art.body}".encode()).hexdigest()  # OLD format
+    store = InMemoryStore()
+    store.upsert_team("Atlas", "Atlas")
+    store.upsert_artifact(ArtifactInput(
+        source_type="confluence", source_ref="ATLAS-STATUS-S15", title=None, body=art.body,
+        author=None, source_timestamp=None, content_hash=old_hash, team_id="t1",
+    ))
+
+    report = ingest_corpus(store, HashingEmbedder(), artifacts={art.artifact_id: art})
+    assert report.ingested == 1  # NOT skipped
+    assert store.artifact("confluence", "ATLAS-STATUS-S15")["functional_id"] == "status-atlas-s15"
+
+
 class _OtherEmbedder:
     """A distinct 1024-dim embedder (different signature) for the re-embed test."""
 

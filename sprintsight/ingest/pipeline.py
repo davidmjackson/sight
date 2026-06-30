@@ -25,10 +25,13 @@ class IngestReport:
         }
 
 
-def _content_hash(body: str, embedder_sig: str) -> str:
-    # The embedder signature is part of the key so changing the embedder invalidates the skip and
-    # forces a re-embed (stored vectors are only valid for the embedder that produced them).
-    return hashlib.sha256(f"{embedder_sig}\n{body}".encode()).hexdigest()
+def _content_hash(body: str, embedder_sig: str, functional_id: str, sprint: int) -> str:
+    # functional_id + sprint are part of the key so the FIRST re-ingest after they became
+    # persisted re-writes every row (and backfills the new columns) instead of skipping on an
+    # unchanged body. The embedder signature keeps stored vectors valid for their embedder.
+    return hashlib.sha256(
+        f"{embedder_sig}\n{functional_id}\n{sprint}\n{body}".encode()
+    ).hexdigest()
 
 
 def ingest_corpus(
@@ -57,7 +60,7 @@ def ingest_corpus(
     for art in artifacts.values():
         source_type = art.source_type
         source_ref = art.meta.get("source_ref", art.artifact_id)
-        content_hash = _content_hash(art.body, embedder_sig)
+        content_hash = _content_hash(art.body, embedder_sig, art.artifact_id, art.sprint)
 
         if store.get_content_hash(source_type, source_ref) == content_hash:
             report.skipped += 1
@@ -73,6 +76,8 @@ def ingest_corpus(
                 source_timestamp=art.meta.get("source_timestamp"),
                 content_hash=content_hash,
                 team_id=team_ids[art.team],
+                functional_id=art.artifact_id,
+                sprint=art.sprint,
             )
         )
 
