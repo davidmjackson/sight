@@ -25,6 +25,7 @@ from sprintsight.web.auth.users import User, make_authenticator
 
 _HERE = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
+_THEME = _HERE / "static" / "theme"
 
 
 def create_app() -> FastAPI:
@@ -37,6 +38,10 @@ def create_app() -> FastAPI:
         https_only=not is_dev(),
     )
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
+    app.mount("/css", StaticFiles(directory=str(_THEME / "css")), name="css")
+    app.mount("/js", StaticFiles(directory=str(_THEME / "js")), name="js")
+    app.mount("/illos", StaticFiles(directory=str(_THEME / "illos")), name="illos")
+    app.mount("/fonts", StaticFiles(directory=str(_THEME / "fonts")), name="fonts")
     authenticator = make_authenticator()
 
     @app.get("/login", response_class=HTMLResponse)
