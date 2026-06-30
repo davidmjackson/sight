@@ -57,6 +57,7 @@ def test_team_page_atlas_has_verdict_banner(client):
     html = client.get("/team/atlas").text
     assert "verdict-banner" in html
     assert "verdict-emoji" in html
+    assert 'class="card detail"' in html  # detail now in an Instrument card
 
 
 def test_team_page_audience_tabs_present(client):
