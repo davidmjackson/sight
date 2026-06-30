@@ -76,6 +76,9 @@
 .ins ul.sources{list-style:none; padding:0; margin:0; color:var(--soft); font-size:13px;}
 .ins ul.sources li{margin:4px 0;}
 
+/* logout sits inline in the topbar actions */
+.ins .logout-form{display:inline-flex; margin:0;}
+
 /* login */
 .ins .login-card{max-width:24rem; margin:0 auto;}
 .ins .login-form{display:flex; flex-direction:column; gap:14px;}

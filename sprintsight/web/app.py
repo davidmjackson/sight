@@ -25,6 +25,13 @@ from sprintsight.web.auth.users import User, make_authenticator
 
 _HERE = Path(__file__).resolve().parent
 _TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
+# Expose the per-session CSRF minter to templates so the shared shell's logout form can
+# carry a token without every authenticated route having to thread it through its context.
+# On authenticated renders this only ever READS the session: you reach a logged-in page only
+# via POST /login, which already required the token GET /login minted, so it is present by
+# then. It mints (a session write) solely pre-login, where login.html passes csrf_token
+# explicitly and the logout form is not rendered — so no authenticated GET rewrites the cookie.
+_TEMPLATES.env.globals["issue_csrf"] = issue_csrf
 _THEME = _HERE / "static" / "theme"
 
 
@@ -80,8 +87,12 @@ def create_app() -> FastAPI:
         login_session(request, user)
         return RedirectResponse("/", status_code=303)
 
-    @app.get("/logout")
-    def do_logout(request: Request) -> RedirectResponse:
+    @app.post("/logout")
+    def do_logout(request: Request, csrf_token: str = Form("")) -> RedirectResponse:
+        # Sign-out is state-changing, so it is a CSRF-guarded POST: a forged cross-site
+        # request (no/wrong token) is rejected and leaves the session intact (fail closed).
+        if not valid_csrf(request, csrf_token):
+            raise HTTPException(status_code=400, detail="invalid csrf token")
         logout_session(request)
         return RedirectResponse("/login", status_code=303)
 

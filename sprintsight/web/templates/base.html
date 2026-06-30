@@ -14,7 +14,10 @@
     <span class="tbacts">
       {% if user %}
         <span class="micro">{{ user.email }} &middot; {{ user.role }}</span>
-        <a class="btn btn-ghost btn-sm" href="/logout">Sign out</a>
+        <form method="post" action="/logout" class="logout-form">
+          <input type="hidden" name="csrf_token" value="{{ issue_csrf(request) }}">
+          <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+        </form>
       {% else %}
         <a class="btn btn-ghost btn-sm" href="/login">Sign in</a>
       {% endif %}

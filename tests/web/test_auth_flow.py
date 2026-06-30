@@ -60,7 +60,11 @@ def test_logout_clears_session():
         },
         follow_redirects=False,
     )
-    resp = client.get("/logout", follow_redirects=False)
+    import re
+
+    m = re.search(r'<form[^>]*action="/logout".*?value="([^"]+)"', client.get("/").text, re.S)
+    assert m, "authenticated shell is missing a POST /logout form"
+    resp = client.post("/logout", data={"csrf_token": m.group(1)}, follow_redirects=False)
     assert resp.status_code == 303
     assert resp.headers["location"] == "/login"
 
