@@ -50,6 +50,7 @@ def test_portfolio_page_shows_summary_band(client):
     assert "summary-band" in html
     assert "Watermelon" in html  # KPI label
     assert "Teams tracked" in html
+    assert 'class="card"' in html  # table now lives in an Instrument card
 
 
 def test_team_page_atlas_has_verdict_banner(client):

@@ -1,49 +1,38 @@
 {% extends "base.html" %}
 {% block title %}Portfolio{% endblock %}
+{% block eyebrow %}Portfolio{% endblock %}
+{% block heading %}Team portfolio{% endblock %}
+{% block sub %}Reported status versus what the data actually shows, as of Sprint {{ summary.sprint }}.{% endblock %}
 {% block main %}
-<h1>Team portfolio</h1>
-<p class="lede">Reported status versus what the data actually shows, as of Sprint {{ summary.sprint }}. <a href="/crosstool">Cross-tool signals (Jira vs GitHub)</a>.</p>
-
 <div class="summary-band">
   <div class="kpi{% if summary.watermelons %} kpi-alert{% endif %}">
-    <span class="num">{{ summary.watermelons }}</span>
-    <span class="label">Watermelons flagged</span>
+    <span class="num">{{ summary.watermelons }}</span><span class="label">Watermelons flagged</span>
   </div>
-  <div class="kpi">
-    <span class="num">{{ summary.teams_tracked }}</span>
-    <span class="label">Teams tracked</span>
-  </div>
-  <div class="kpi">
-    <span class="num">{{ summary.insufficient }}</span>
-    <span class="label">Insufficient evidence</span>
-  </div>
-  <div class="kpi">
-    <span class="num">{{ summary.sprint }}</span>
-    <span class="label">Current sprint</span>
-  </div>
+  <div class="kpi"><span class="num">{{ summary.teams_tracked }}</span><span class="label">Teams tracked</span></div>
+  <div class="kpi"><span class="num">{{ summary.insufficient }}</span><span class="label">Insufficient evidence</span></div>
+  <div class="kpi"><span class="num">{{ summary.sprint }}</span><span class="label">Current sprint</span></div>
 </div>
 
-<table class="portfolio">
-  <thead>
-    <tr><th>Team</th><th>Reported</th><th>Actual</th><th>Flag</th></tr>
-  </thead>
-  <tbody>
-  {% for row in rows %}
-    <tr class="{{ 'watermelon' if row.is_watermelon else '' }}">
-      <td><a href="/team/{{ row.team|lower }}">{{ row.team }}</a></td>
-      <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>
-      <td><span class="rag rag-{{ row.actual_status }}">{{ row.actual_status }}</span></td>
-      <td>
-        {% if not row.has_verdict %}
-          <span class="badge badge-muted">insufficient evidence</span>
-        {% elif row.is_watermelon %}
-          <span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
-        {% else %}
-          <span class="badge badge-ok">consistent</span>
-        {% endif %}
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div class="card">
+  <p class="lede">Cross-tool signals: <a class="lnk" href="/crosstool">Jira vs GitHub</a>.</p>
+  <div class="table-wrap">
+    <table class="table portfolio">
+      <thead><tr><th>Team</th><th>Reported</th><th>Actual</th><th>Flag</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr class="{{ 'watermelon' if row.is_watermelon else '' }}">
+          <td><a class="lnk" href="/team/{{ row.team|lower }}">{{ row.team }}</a></td>
+          <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>
+          <td><span class="rag rag-{{ row.actual_status }}">{{ row.actual_status }}</span></td>
+          <td>
+            {% if not row.has_verdict %}<span class="badge badge-muted">insufficient evidence</span>
+            {% elif row.is_watermelon %}<span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
+            {% else %}<span class="badge badge-ok">consistent</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
