@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Accounts - Sprintsight{% endblock %}
+{% block eyebrow %}Admin{% endblock %}
+{% block heading %}Accounts{% endblock %}
+{% block sub %}Admin only. Synthetic demo users. <a class="lnk" href="/">&larr; Back to portfolio</a>{% endblock %}
 {% block main %}
-<p><a href="/" class="back">&larr; Back to portfolio</a></p>
-<section class="accounts">
-  <h1>Accounts</h1>
-  <p class="sub">Admin only. Synthetic demo users.</p>
-  <table>
-    <thead><tr><th>Email</th><th>Role</th></tr></thead>
-    <tbody>
-      {% for a in accounts %}
-      <tr><td>{{ a.email }}</td><td>{{ a.role }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Email</th><th>Role</th></tr></thead>
+      <tbody>
+        {% for a in accounts %}
+        <tr><td>{{ a.email }}</td><td><span class="pill pill-ok">{{ a.role }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

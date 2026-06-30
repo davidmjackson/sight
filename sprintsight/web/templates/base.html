@@ -4,17 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Sprintsight{% endblock %}</title>
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/css/instrument-core.css">
+  <link rel="stylesheet" href="/css/sprintsight.css">
+  <script type="module" src="/js/oscilloscope.js"></script>
 </head>
-<body>
-  <header class="app-header">
-    <a href="/" class="brand"><span class="brand-logo"></span>Sprintsight</a>
-    <span class="sub">watermelon detector</span>
-    <span class="session">
-      {% if user %}{{ user.email }} ({{ user.role }}) &middot; <a href="/logout">Sign out</a>
-      {% else %}<a href="/login">Sign in</a>{% endif %}
+<body class="ins" data-app="sprintsight">
+  <header class="topbar">
+    <a href="/" class="brand"><span class="mk"><svg width="22" height="22"><use href="/illos/sprintsight.svg#glyph-sprintsight"/></svg></span>Sprintsight</a>
+    <span class="tbacts">
+      {% if user %}
+        <span class="micro">{{ user.email }} &middot; {{ user.role }}</span>
+        <a class="btn btn-ghost btn-sm" href="/logout">Sign out</a>
+      {% else %}
+        <a class="btn btn-ghost btn-sm" href="/login">Sign in</a>
+      {% endif %}
     </span>
   </header>
-  <main>{% block main %}{% endblock %}</main>
+  <div class="band">
+    <div class="waves" aria-hidden="true"></div>
+    <div class="band-in">
+      <p class="eyebrow">{% block eyebrow %}Watermelon detector{% endblock %}</p>
+      <h1>{% block heading %}Sprintsight{% endblock %}</h1>
+      <p class="sub">{% block sub %}{% endblock %}</p>
+    </div>
+  </div>
+  <main class="page">{% block main %}{% endblock %}</main>
+  <footer class="footer">Sprintsight &middot; Sprint Suite</footer>
 </body>
 </html>

@@ -41,8 +41,8 @@ def test_team_page_exec_audience_renders_exec_section(client):
 
 def test_shell_has_branded_header(client):
     html = client.get("/").text
-    assert "app-header" in html
-    assert "brand-logo" in html
+    assert 'data-app="sprintsight"' in html
+    assert "glyph-sprintsight" in html
 
 
 def test_portfolio_page_shows_summary_band(client):
@@ -50,12 +50,14 @@ def test_portfolio_page_shows_summary_band(client):
     assert "summary-band" in html
     assert "Watermelon" in html  # KPI label
     assert "Teams tracked" in html
+    assert 'class="card"' in html  # table now lives in an Instrument card
 
 
 def test_team_page_atlas_has_verdict_banner(client):
     html = client.get("/team/atlas").text
     assert "verdict-banner" in html
     assert "verdict-emoji" in html
+    assert 'class="card detail"' in html  # detail now in an Instrument card
 
 
 def test_team_page_audience_tabs_present(client):
@@ -66,14 +68,15 @@ def test_team_page_audience_tabs_present(client):
 
 def test_login_page_uses_shell(anon_client):
     html = anon_client.get("/login").text
-    assert "app-header" in html  # inherits the branded shell
-    assert "brand-logo" in html
+    assert 'data-app="sprintsight"' in html  # inherits the Instrument shell
+    assert "glyph-sprintsight" in html
 
 
 def test_admin_accounts_uses_shell(client):
     html = client.get("/admin/accounts").text
-    assert "app-header" in html
+    assert 'data-app="sprintsight"' in html
     assert "Accounts" in html
+    assert 'class="table"' in html  # Instrument table
 
 
 def test_crosstool_page_renders_summary_and_flags(client):
@@ -84,6 +87,7 @@ def test_crosstool_page_renders_summary_and_flags(client):
     assert "no activity" in html                # the stalled citation
     assert "Jira SSSB-1" in html                # both tools cited
     assert "GitHub:" in html
+    assert 'class="card"' in html               # table now in an Instrument card
 
 
 def test_crosstool_api_returns_counts(client):

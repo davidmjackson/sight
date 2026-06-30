@@ -1,0 +1,82 @@
+/* Sprintsight per-app stylesheet — layers on instrument-core.css.
+   Indigo accent + a SEPARATE red/amber/green verdict set for the watermelon. */
+.ins[data-app="sprintsight"]{
+  /* indigo accent (the unused hue between Retro teal and Plan violet) */
+  --accent:oklch(0.50 0.10 262);
+  --accent-deep:oklch(0.42 0.10 262);
+  --accent-wash:oklch(0.95 0.03 262);
+  /* radius / shadow (suite values) */
+  --r-1:7px; --r-2:10px;
+  --shadow-1:0 1px 2px oklch(0.3 0.05 240 / 0.06);
+  /* watermelon verdict set — DELIBERATELY separate from the accent */
+  --rag-red:oklch(0.55 0.19 25);    --rag-red-wash:oklch(0.95 0.04 25);
+  --rag-amber:oklch(0.70 0.13 70);  --rag-amber-wash:oklch(0.95 0.05 78);
+  --rag-green:oklch(0.55 0.12 150); --rag-green-wash:oklch(0.95 0.04 150);
+  --rag-unknown:oklch(0.62 0.01 250);
+}
+
+/* accent overrides for instrument primitives that hardcode --green */
+.ins[data-app="sprintsight"] .brand .mk{color:var(--accent);}
+.ins[data-app="sprintsight"] .waves{color:var(--accent);}
+.ins[data-app="sprintsight"] .btn-pri{background:var(--accent); color:#fff;}
+.ins[data-app="sprintsight"] .input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-wash);}
+.ins[data-app="sprintsight"] a.lnk{color:var(--accent); border-bottom-color:color-mix(in oklab,var(--accent) 30%,transparent);}
+
+/* summary band */
+.ins .summary-band{display:flex; gap:12px; flex-wrap:wrap;}
+.ins .kpi{flex:1 1 150px; background:var(--panel); border:1px solid var(--line2); border-radius:var(--r-2); padding:16px 18px;}
+.ins .kpi .num{font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:700; letter-spacing:-0.02em; display:block;}
+.ins .kpi .label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint); font-weight:500; display:block; margin-top:4px;}
+.ins .kpi-alert .num{color:var(--rag-red);}
+
+/* portfolio + cross-tool tables */
+.ins table.portfolio td a{color:var(--ink); font-weight:600; text-decoration:none;}
+.ins table.portfolio td a:hover{color:var(--accent);}
+.ins tr.watermelon{background:var(--rag-red-wash);}
+.ins td.evidence{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--soft);}
+
+/* RAG chips */
+.ins .rag{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; padding:3px 9px; border-radius:5px; color:#fff; text-transform:capitalize; display:inline-block;}
+.ins .rag-green{background:var(--rag-green);}
+.ins .rag-amber{background:var(--rag-amber);}
+.ins .rag-red{background:var(--rag-red);}
+.ins .rag-unknown{background:var(--rag-unknown);}
+
+/* flag badges */
+.ins .badge{font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:4px 9px; border-radius:5px; display:inline-flex; align-items:center;}
+.ins .badge-watermelon{background:var(--rag-red-wash); color:var(--rag-red);}
+.ins .badge-ok{background:var(--greenwash); color:var(--green);}
+.ins .badge-muted{background:oklch(0.93 0.006 250); color:var(--faint);}
+.ins .badge-stalled{background:var(--rag-amber-wash); color:oklch(0.5 0.12 60);}
+.ins .badge-live{background:var(--accent-wash); color:var(--accent-deep);}
+.ins .kb-score{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--faint); margin-left:8px;}
+
+/* team drill-in */
+.ins .verdict-banner{display:flex; gap:14px; align-items:center; background:var(--rag-red-wash); border-color:color-mix(in oklab,var(--rag-red) 30%,var(--line2));}
+.ins .verdict-emoji{font-size:30px; line-height:1;}
+.ins .verdict-banner h2{margin:0;}
+.ins .verdict-banner .sub{margin-top:4px; color:var(--soft); font-size:14px;}
+.ins .detail h2{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--faint); font-weight:600; margin:18px 0 8px;}
+.ins .detail h2:first-child{margin-top:0;}
+.ins .explanation{margin:0;}
+.ins ul.signals{margin:6px 0; padding-left:18px;}
+.ins ul.signals li{margin:4px 0;}
+.ins ul.evidence{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;}
+.ins .evidence-card{border:1px solid var(--line2); border-radius:var(--r-1); padding:10px 12px; background:var(--bone);}
+.ins .snippet{color:var(--soft); font-size:13px; margin-top:4px;}
+.ins code{font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--bone); border:1px solid var(--line); color:var(--soft); padding:1px 6px; border-radius:4px;}
+
+/* audience tabs */
+.ins .audience-tabs{display:inline-flex; gap:4px; background:var(--bone); border:1px solid var(--line2); padding:4px; border-radius:var(--r-1); margin:6px 0 14px;}
+.ins .audience-switch .aud{display:inline-block; padding:6px 14px; border-radius:5px; font-size:13px; font-weight:600; color:var(--soft); text-decoration:none;}
+.ins .audience-switch .aud-active{background:var(--panel); color:var(--ink); box-shadow:var(--shadow-1);}
+.ins .report-body{white-space:pre-wrap; margin:0 0 8px; color:var(--ink);}
+.ins .detail h3, .ins .card h3{font-size:14px; margin:14px 0 4px;}
+.ins .sources-list{border-top:1px solid var(--line); margin-top:16px; padding-top:12px;}
+.ins ul.sources{list-style:none; padding:0; margin:0; color:var(--soft); font-size:13px;}
+.ins ul.sources li{margin:4px 0;}
+
+/* login */
+.ins .login-card{max-width:24rem; margin:0 auto;}
+.ins .login-form{display:flex; flex-direction:column; gap:14px;}
+.ins .error{color:var(--rag-red); font-size:13px;}
