@@ -109,6 +109,41 @@ def db_knowledge_for(team: str, k: int = 5) -> list["KnowledgeItem"]:
             retriever.close()
 
 
+# --- DB-backed verdict/report source (verdict-off-DB slice), fail-safe and off by default ---
+_VERDICT_DB_FLAG = "SPRINTSIGHT_VERDICT_DB"
+
+
+def _verdict_db_enabled() -> bool:
+    """True only when the verdict-DB switch is deliberately on AND a DATABASE_URL is set."""
+    return os.environ.get(_VERDICT_DB_FLAG) == "on" and bool(os.environ.get("DATABASE_URL"))
+
+
+def _make_artifact_source():
+    """Build the production artifact source. Seam: tests inject a fake; psycopg stays lazy."""
+    from sprintsight.retrieval.db_corpus import PostgresArtifactSource
+
+    return PostgresArtifactSource(os.environ["DATABASE_URL"])
+
+
+def _artifacts_for(team: str) -> dict[str, Artifact]:
+    """Team artifacts for the verdict and report. DB when the verdict-DB gate is open, else the
+    corpus. Fail-safe: any DB error, or an empty (un-backfilled) result, falls back to the corpus
+    so the app never blanks out or 500s on a DB problem."""
+    if not _verdict_db_enabled():
+        return artifacts_for(team, _SPRINTS)
+    source = None
+    try:
+        source = _make_artifact_source()
+        arts = source.artifacts_for(team, _SPRINTS)
+        return arts if arts else artifacts_for(team, _SPRINTS)
+    except Exception:
+        logging.exception("DB artifact source failed for team %s; using corpus", team)
+        return artifacts_for(team, _SPRINTS)
+    finally:
+        if source is not None:
+            source.close()
+
+
 def _knowledge_item(chunk) -> "KnowledgeItem":
     snippet = chunk.text.strip().splitlines()[0][:200] if chunk.text.strip() else ""
     label = _SOURCE_LABELS.get(chunk.source_type, chunk.source_type.title() or "Artifact")
@@ -234,7 +269,7 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
     verdict = _verdict_or_none(team)
     if verdict is None:
         return _insufficient_detail(team, audience, knowledge)
-    arts = artifacts_for(team, _SPRINTS)
+    arts = _artifacts_for(team)
     sections, sources, insufficient = _report_for(team, audience, arts)
     return TeamDetail(
         team=team,
@@ -256,7 +291,7 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
 
 def _verdict_or_none(team: str) -> Verdict | None:
     """Run the detector, or return None when the team has too little data to judge."""
-    arts = artifacts_for(team, _SPRINTS)
+    arts = _artifacts_for(team)
     if not _has_minimum(team, arts):
         return None
     try:
