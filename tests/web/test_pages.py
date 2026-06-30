@@ -76,6 +76,7 @@ def test_admin_accounts_uses_shell(client):
     html = client.get("/admin/accounts").text
     assert 'data-app="sprintsight"' in html
     assert "Accounts" in html
+    assert 'class="table"' in html  # Instrument table
 
 
 def test_crosstool_page_renders_summary_and_flags(client):
