@@ -24,6 +24,8 @@ class ArtifactInput:
     source_timestamp: str | None
     content_hash: str
     team_id: str | None = None
+    functional_id: str | None = None
+    sprint: int | None = None
 
 
 # (Chunk, embedding) pairs to write for an artifact.
@@ -68,6 +70,10 @@ class InMemoryStore:
             "title": art.title,
             "body": art.body,
             "team_id": art.team_id,
+            "source_type": art.source_type,
+            "source_ref": art.source_ref,
+            "functional_id": art.functional_id,
+            "sprint": art.sprint,
         }
         return artifact_id
 
@@ -155,8 +161,8 @@ class PostgresStore:
                 """
                 insert into artifact
                   (source_type, source_ref, title, body, author, source_timestamp,
-                   content_hash, team_id, tenant_id)
-                values (%s::source_type, %s, %s, %s, %s, %s::timestamptz, %s, %s, %s)
+                   content_hash, team_id, functional_id, sprint, tenant_id)
+                values (%s::source_type, %s, %s, %s, %s, %s::timestamptz, %s, %s, %s, %s, %s)
                 on conflict (tenant_id, source_type, source_ref) do update set
                   title = excluded.title,
                   body = excluded.body,
@@ -164,6 +170,8 @@ class PostgresStore:
                   source_timestamp = excluded.source_timestamp,
                   content_hash = excluded.content_hash,
                   team_id = excluded.team_id,
+                  functional_id = excluded.functional_id,
+                  sprint = excluded.sprint,
                   ingested_at = now()
                 returning id
                 """,
@@ -176,6 +184,8 @@ class PostgresStore:
                     art.source_timestamp,
                     art.content_hash,
                     art.team_id,
+                    art.functional_id,
+                    art.sprint,
                     self.tenant_id,
                 ),
             )
