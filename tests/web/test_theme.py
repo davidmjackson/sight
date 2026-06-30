@@ -37,5 +37,13 @@ def test_login_uses_instrument_shell(anon_client) -> None:
     assert "/css/instrument-core.css" in html
 
 
+def test_login_uses_instrument_card(anon_client) -> None:
+    html = anon_client.get("/login").text
+    assert "login-card" in html
+    assert 'name="csrf_token"' in html  # auth hook preserved
+    assert 'name="email"' in html
+    assert 'name="password"' in html
+
+
 def test_reticle_glyph_referenced(client) -> None:
     assert "glyph-sprintsight" in client.get("/").text
