@@ -86,6 +86,7 @@ def test_crosstool_page_renders_summary_and_flags(client):
     assert "no activity" in html                # the stalled citation
     assert "Jira SSSB-1" in html                # both tools cited
     assert "GitHub:" in html
+    assert 'class="card"' in html               # table now in an Instrument card
 
 
 def test_crosstool_api_returns_counts(client):
