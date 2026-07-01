@@ -19,6 +19,21 @@
 </div>
 {% endif %}
 
+{% if d.cross_team_risk %}
+{% set r = d.cross_team_risk %}
+<div class="card cross-team-risk">
+  <h2>Cross-team risk <span class="badge badge-eyebrow">{{ r.provider_team }} dependency</span></h2>
+  <p class="sub">{{ r.headline }}</p>
+  <p>Cited on both sides:
+    <code>{{ r.consumer_citation }}</code>
+    {% for c in r.provider_citations %}<code>{{ c }}</code>{% endfor %}
+  </p>
+  {% if not r.logged_in_raid %}
+  <p class="recommend"><strong>Recommend:</strong> log this dependency in {{ r.consumer_team }}'s RAID with an owner and a mitigation. (Sprintsight recommends only; it does not write to the RAID.)</p>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="card detail">
 {% if d.has_verdict %}
   {% if not d.is_watermelon %}

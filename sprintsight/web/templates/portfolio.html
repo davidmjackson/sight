@@ -28,6 +28,7 @@
             {% if not row.has_verdict %}<span class="badge badge-muted">insufficient evidence</span>
             {% elif row.is_watermelon %}<span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
             {% else %}<span class="badge badge-ok">consistent</span>{% endif %}
+            {% if row.has_cross_team_risk %}<span class="badge badge-eyebrow cross-team" title="A cross-team dependency is slipping">cross-team risk</span>{% endif %}
           </td>
         </tr>
       {% endfor %}
