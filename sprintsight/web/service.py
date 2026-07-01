@@ -207,6 +207,7 @@ class TeamRow:
     is_watermelon: bool
     headline: str
     has_verdict: bool
+    has_cross_team_risk: bool = False
 
 
 @dataclass(frozen=True)
@@ -231,10 +232,12 @@ class TeamDetail:
 def portfolio() -> list[TeamRow]:
     rows: list[TeamRow] = []
     for team in TEAMS:
-        verdict = _verdict_or_none(team)
+        arts = _artifacts_for(team)  # fetched once; reused for verdict and reconcile
+        verdict = _verdict_from_arts(team, arts)
         if verdict is None:
             rows.append(_insufficient_row(team))
             continue
+        has_risk = reconcile_cross_team(team, arts, _artifacts_for) is not None
         rows.append(
             TeamRow(
                 team=team,
@@ -243,6 +246,7 @@ def portfolio() -> list[TeamRow]:
                 is_watermelon=verdict.is_watermelon,
                 headline=_headline(verdict),
                 has_verdict=True,
+                has_cross_team_risk=has_risk,
             )
         )
     return rows

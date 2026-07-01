@@ -257,3 +257,14 @@ def test_team_detail_boreas_has_no_cross_team_risk():
     d = service.team_detail("boreas")
     assert d is not None
     assert d.cross_team_risk is None
+
+
+def test_portfolio_flags_atlas_cross_team_risk():
+    atlas = _row(service.portfolio(), "Atlas")
+    assert atlas.has_cross_team_risk is True
+
+
+def test_portfolio_other_teams_have_no_cross_team_risk():
+    rows = {r.team: r for r in service.portfolio()}
+    for team in ("Boreas", "Cygnus", "Draco", "Echo"):
+        assert rows[team].has_cross_team_risk is False, team
