@@ -241,3 +241,19 @@ def test_summary_all_consistent_has_no_watermelons():
 def test_summary_counts_insufficient_rows():
     rows = [_summary_row("A", has_verdict=False), _summary_row("B", has_verdict=False)]
     assert service.summarize(rows).insufficient == 2
+
+
+def test_team_detail_atlas_has_cross_team_risk():
+    d = service.team_detail("atlas")
+    assert d is not None
+    risk = d.cross_team_risk
+    assert risk is not None
+    assert risk.provider_team == "Draco"
+    assert risk.dependency_ref == "DRACO-412"
+    assert risk.logged_in_raid is False
+
+
+def test_team_detail_boreas_has_no_cross_team_risk():
+    d = service.team_detail("boreas")
+    assert d is not None
+    assert d.cross_team_risk is None

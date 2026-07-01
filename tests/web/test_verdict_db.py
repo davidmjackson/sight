@@ -62,9 +62,10 @@ def test_empty_db_falls_back_to_corpus(monkeypatch):
     assert "burndown-atlas-s15" in arts  # un-backfilled DB -> corpus
 
 
-def test_team_detail_fetches_artifacts_once(monkeypatch):
-    """team_detail derives the verdict, report, and evidence from a SINGLE artifact fetch,
-    so it never makes a second DB round-trip when the verdict-DB gate is on."""
+def test_team_detail_fetches_consumer_artifacts_once(monkeypatch):
+    """team_detail derives the verdict, report, and evidence from a SINGLE consumer fetch.
+    A second fetch for the PROVIDER team (cross-team risk reconciliation) is expected and
+    distinct; the consumer team must never be fetched more than once."""
     real = svc._artifacts_for
     calls: list[str] = []
 
@@ -75,12 +76,15 @@ def test_team_detail_fetches_artifacts_once(monkeypatch):
     monkeypatch.setattr(svc, "_artifacts_for", _counting)
     detail = svc.team_detail("atlas")
     assert detail is not None and detail.has_verdict
-    assert calls == ["Atlas"]  # exactly one fetch, not two
+    assert calls.count("Atlas") == 1  # consumer fetched exactly once
+    # provider team may also be fetched once for cross-team reconciliation
+    assert len(calls) == calls.count("Atlas") + calls.count("Draco")
 
 
-def test_team_detail_with_gate_on_makes_one_db_round_trip(monkeypatch):
-    """With the verdict-DB gate ON, team_detail builds the DB artifact source exactly once,
-    directly demonstrating the saved round-trip (it used to fetch twice)."""
+def test_team_detail_with_gate_on_makes_one_db_round_trip_per_team(monkeypatch):
+    """With the verdict-DB gate ON, team_detail builds the DB artifact source once per unique
+    team: once for the consumer (Atlas) and once for the provider (Draco) during cross-team
+    risk reconciliation. Two builds total, one per team, not duplicate fetches of the same team."""
     monkeypatch.setenv("SPRINTSIGHT_VERDICT_DB", "on")
     monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
     built: list[int] = []
@@ -92,4 +96,4 @@ def test_team_detail_with_gate_on_makes_one_db_round_trip(monkeypatch):
     monkeypatch.setattr(svc, "_make_artifact_source", _make)
     detail = svc.team_detail("atlas")
     assert detail is not None and detail.has_verdict
-    assert len(built) == 1  # one DB round-trip, not two
+    assert len(built) == 2  # one for consumer (Atlas), one for provider (Draco)

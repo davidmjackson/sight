@@ -12,6 +12,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 
+from sprintsight.crossteam import CrossTeamRisk, reconcile_cross_team
 from sprintsight.evals.fixtures import Artifact, artifacts_for
 from sprintsight.evals.watermelon import Verdict
 from sprintsight.graph.builder import graph_detector
@@ -224,6 +225,7 @@ class TeamDetail:
     report_sources: list[EvidenceItem] = field(default_factory=list)
     report_insufficient: bool = False
     db_knowledge: list[KnowledgeItem] = field(default_factory=list)
+    cross_team_risk: CrossTeamRisk | None = None
 
 
 def portfolio() -> list[TeamRow]:
@@ -270,6 +272,7 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
     verdict = _verdict_from_arts(team, arts)
     if verdict is None:
         return _insufficient_detail(team, audience, knowledge)
+    cross_team_risk = reconcile_cross_team(team, arts, _artifacts_for)
     sections, sources, insufficient = _report_for(team, audience, arts)
     return TeamDetail(
         team=team,
@@ -286,6 +289,7 @@ def team_detail(team_id: str, audience: str = DEFAULT_AUDIENCE) -> TeamDetail | 
         report_sources=sources,
         report_insufficient=insufficient,
         db_knowledge=knowledge,
+        cross_team_risk=cross_team_risk,
     )
 
 
