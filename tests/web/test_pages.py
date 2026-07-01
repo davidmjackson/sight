@@ -153,3 +153,23 @@ def test_crosstool_page_shows_offline_failed_badge(client, monkeypatch):
     resp = client.get("/crosstool")
     assert resp.status_code == 200
     assert "offline (live read failed)" in resp.text
+
+
+def test_team_page_atlas_shows_cross_team_card(client):
+    html = client.get("/team/atlas").text
+    assert "cross-team-risk" in html          # the card marker class
+    assert "Draco" in html                     # provider named
+    assert "DRACO-412" in html                 # dependency ref cited
+    assert "slack-atlas-s15-msg-dep" in html   # consumer-side citation
+    assert "jira-draco-s15-authapi" in html    # provider-side citation
+    assert "Recommend" in html                 # Behaviour 3: recommend logging in the RAID
+
+
+def test_team_page_boreas_has_no_cross_team_card(client):
+    html = client.get("/team/boreas").text
+    assert "cross-team-risk" not in html
+
+
+def test_portfolio_marks_atlas_cross_team_row(client):
+    html = client.get("/").text
+    assert "cross-team" in html                # Atlas row marker text/class
