@@ -23,6 +23,7 @@ from typing import Any
 
 from sprintsight.evals.fixtures import Artifact
 from sprintsight.evals.watermelon import Verdict
+from sprintsight.signals import mentions_risk_dependency
 
 _RANK = {"green": 0, "amber": 1, "red": 2}
 _BY_RANK = {v: k for k, v in _RANK.items()}
@@ -88,13 +89,11 @@ def _find_in_sprint(arts: dict[str, Artifact], prefix: str, sprint: int) -> str 
 def _find_hidden_dependency(arts: dict[str, Artifact], raid_body: str) -> str | None:
     """A dependency/blocker raised in chat (Sprint 15) but absent from the RAID (B1/B3)."""
     raid = raid_body.lower()
-    risk = re.compile(r"isn't ready|not ready|slipp|bite us|won't hold|blocked|building on sand")
-    depend = re.compile(r"api|dependency|endpoint|service")
     for aid, a in arts.items():
         if a.source_type != "slack" or a.sprint != 15:
             continue
         body = a.body.lower()
-        if not (risk.search(body) and depend.search(body)):
+        if not mentions_risk_dependency(body):
             continue
         salient = re.findall(r"[a-z]+-\d+", body)
         if "auth api" in body:

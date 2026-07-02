@@ -25,6 +25,16 @@ EMBEDDING_DIM = 1024
 DEFAULT_LOCAL_MODEL = "thenlper/gte-large"  # 1024-dim native, no query/passage prefix asymmetry
 
 
+def to_pgvector(vec: list[float]) -> str:
+    """Format a float vector as a pgvector text literal, e.g. ``[0.1,0.2]``.
+
+    The stored chunk vector and the query vector MUST use the identical format or cosine
+    distance is meaningless, so both the writer (`ingest.store`) and the reader
+    (`retrieval.postgres`) go through this one function.
+    """
+    return "[" + ",".join(repr(x) for x in vec) + "]"
+
+
 class Embedder(Protocol):
     dim: int
 

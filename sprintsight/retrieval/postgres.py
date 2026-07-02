@@ -6,21 +6,12 @@ Team scoping is supported now that `artifact.team_id` is populated (real-wiring 
 `team` to restrict the search to one team; omit it for a global search.
 """
 
-from sprintsight.ingest.embedding import Embedder
-from sprintsight.ingest.store import DEMO_TENANT_ID
+from sprintsight.ingest.embedding import Embedder, to_pgvector
+from sprintsight.ingest.store import TenantScopedDB
 from sprintsight.retrieval.retriever import RetrievedChunk
 
 
-class PostgresRetriever:
-    def __init__(self, dsn: str, tenant_id: str = DEMO_TENANT_ID) -> None:
-        import psycopg  # lazy: only when querying a real DB
-
-        self.tenant_id = tenant_id
-        self._conn = psycopg.connect(dsn, autocommit=True)
-        # Announce this connection's tenant so per-tenant RLS policies (migration 0003) scope every
-        # query at the DB. session-level (local=false) is correct under autocommit.
-        self._conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
-
+class PostgresRetriever(TenantScopedDB):
     def search(
         self,
         query: str,
@@ -29,13 +20,14 @@ class PostgresRetriever:
         team: str | None = None,
     ) -> list[RetrievedChunk]:
         emb = embedder.embed([query])[0]
-        vec = "[" + ",".join(repr(x) for x in emb) + "]"
+        vec = to_pgvector(emb)
         # Always tenant-scoped (single-tenant today; one less edit when RLS/multi-tenant lands).
         params: list[object] = [vec, self.tenant_id]
         conditions = ["a.tenant_id = %s"]
         if team is not None:
-            # Scope to one team by key. team_id is populated at ingest (slice 3).
-            conditions.append("t.key = %s")
+            # Scope to one team by key (case-insensitive, matching PostgresArtifactSource).
+            # team_id is populated at ingest (slice 3).
+            conditions.append("lower(t.key) = lower(%s)")
             params.append(team)
         where = "where " + " and ".join(conditions)
         params += [vec, k]
@@ -68,6 +60,3 @@ class PostgresRetriever:
             )
             for source_type, source_ref, team_key, ordinal, text, distance in rows
         ]
-
-    def close(self) -> None:
-        self._conn.close()

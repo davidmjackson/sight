@@ -15,14 +15,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from sprintsight.evals.fixtures import Artifact
+from sprintsight.signals import mentions_risk_dependency
 
 # A Jira-style reference like DRACO-412 (team prefix + number).
 _REF = re.compile(r"[A-Za-z]{2,}-\d+")
-# Risk + dependency vocabulary, consistent with detector._find_hidden_dependency.
-_RISK = re.compile(
-    r"isn't ready|not ready|slipp|bite us|won't hold|blocked|building on sand|late", re.I
-)
-_DEP = re.compile(r"api|dependency|endpoint|service", re.I)
 # The provider item is slipping if it uses slip language and is not marked done/closed.
 _SLIP = re.compile(r"slipp|delayed|pushed to sprint|carried over|now targeted", re.I)
 _DONE = re.compile(r"status[^\n|]*[|:]\s*(done|closed|shipped|released)", re.I)
@@ -90,7 +86,7 @@ def reconcile_cross_team(
     for a in consumer_arts.values():
         if a.source_type != "slack" or a.sprint != 15:
             continue
-        if not (_RISK.search(a.body) and _DEP.search(a.body)):
+        if not mentions_risk_dependency(a.body):
             continue
         for ref in _REF.findall(a.body):
             provider_team = _provider_from_ref(ref)

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}{{ d.team }}{% endblock %}
 {% block eyebrow %}Team{% endblock %}
 {% block heading %}{{ d.team }}{% endblock %}
@@ -11,8 +12,8 @@
   <div>
     <h2>{{ d.team }} <span class="badge badge-watermelon">watermelon</span></h2>
     <p class="sub">
-      Reported <span class="rag rag-{{ d.reported_status }}">{{ d.reported_status }}</span>
-      but computed actual <span class="rag rag-{{ d.actual_status }}">{{ d.actual_status }}</span>.
+      Reported {{ ui.rag(d.reported_status) }}
+      but computed actual {{ ui.rag(d.actual_status) }}.
       The status looks healthier than the data supports.
     </p>
   </div>
@@ -37,8 +38,8 @@
 <div class="card detail">
 {% if d.has_verdict %}
   {% if not d.is_watermelon %}
-  <p>Reported <span class="rag rag-{{ d.reported_status }}">{{ d.reported_status }}</span>,
-     computed actual <span class="rag rag-{{ d.actual_status }}">{{ d.actual_status }}</span>.</p>
+  <p>Reported {{ ui.rag(d.reported_status) }},
+     computed actual {{ ui.rag(d.actual_status) }}.</p>
   {% endif %}
   <h2>Why</h2>
   <p class="explanation">{{ d.explanation }}</p>
@@ -47,8 +48,7 @@
   <h2>Evidence</h2>
   <ul class="evidence">
     {% for e in d.evidence %}
-    <li class="evidence-card"><strong>{{ e.title }}</strong> <code>{{ e.artifact_id }}</code>
-      {% if e.snippet %}<div class="snippet">{{ e.snippet }}</div>{% endif %}</li>
+    {{ ui.evidence_card(e.title, e.artifact_id, e.snippet) }}
     {% endfor %}
   </ul>
 {% else %}
@@ -88,9 +88,7 @@
   <h2>From the knowledge base <span class="badge badge-live">live DB</span></h2>
   <ul class="evidence db-knowledge">
     {% for kb in d.db_knowledge %}
-    <li class="evidence-card"><strong>{{ kb.title }}</strong> <code>{{ kb.source_ref }}</code>
-      <span class="kb-score">match {{ kb.score }}</span>
-      {% if kb.snippet %}<div class="snippet">{{ kb.snippet }}</div>{% endif %}</li>
+    {{ ui.evidence_card(kb.title, kb.source_ref, kb.snippet, score=kb.score) }}
     {% endfor %}
   </ul>
 </div>

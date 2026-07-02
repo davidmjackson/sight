@@ -12,7 +12,7 @@ from typing import Any
 
 from sprintsight.detector import Metrics, parse_metrics, parse_reported_status
 from sprintsight.evals.fixtures import Artifact
-from sprintsight.report.audience import PROFILES, AudienceProfile
+from sprintsight.report.audience import PROFILES, TICKET_ID, AudienceProfile
 from sprintsight.report.contract import Claim, Report
 
 ReportWriter = Callable[[dict[str, Any]], Report]
@@ -92,7 +92,7 @@ def _looking_ahead(arts: dict[str, Artifact], status_id: str) -> str:
         return "Sprint 16 planning underway."
     for line in arts[status_id].body.splitlines():
         low = line.lower()
-        if "sprint 16" in low and not re.search(r"[A-Z][A-Z0-9]+-\d+", line):
+        if "sprint 16" in low and not re.search(TICKET_ID, line):
             return line.strip()
     return "Sprint 16 planning underway."
 

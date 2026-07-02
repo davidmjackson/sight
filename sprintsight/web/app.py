@@ -17,8 +17,8 @@ from sprintsight.web.auth.session import (
     login_session,
     logout_session,
     require_api_user,
+    require_page_user,
     session_secret,
-    session_user,
     valid_csrf,
 )
 from sprintsight.web.auth.users import User, make_authenticator
@@ -116,20 +116,18 @@ def create_app() -> FastAPI:
         return asdict(crosstool_service.crosstool_view())
 
     @app.get("/crosstool", response_class=HTMLResponse)
-    def page_crosstool(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if user is None:
-            return RedirectResponse("/login", status_code=303)
+    def page_crosstool(
+        request: Request, user: User = Depends(require_page_user)  # noqa: B008
+    ) -> HTMLResponse:
         page = crosstool_service.crosstool_view()
         return _TEMPLATES.TemplateResponse(
             request, "crosstool.html", {"page": page, "user": user}
         )
 
     @app.get("/", response_class=HTMLResponse)
-    def page_portfolio(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if user is None:
-            return RedirectResponse("/login", status_code=303)
+    def page_portfolio(
+        request: Request, user: User = Depends(require_page_user)  # noqa: B008
+    ) -> HTMLResponse:
         rows = service.portfolio()
         return _TEMPLATES.TemplateResponse(
             request,
@@ -139,21 +137,20 @@ def create_app() -> FastAPI:
 
     @app.get("/team/{team_id}", response_class=HTMLResponse)
     def page_team(
-        request: Request, team_id: str, audience: str = service.DEFAULT_AUDIENCE
+        request: Request,
+        team_id: str,
+        audience: str = service.DEFAULT_AUDIENCE,
+        user: User = Depends(require_page_user),  # noqa: B008
     ) -> HTMLResponse:
-        user = session_user(request)
-        if user is None:
-            return RedirectResponse("/login", status_code=303)
         detail = service.team_detail(team_id, audience)
         if detail is None:
             raise HTTPException(status_code=404, detail="unknown team")
         return _TEMPLATES.TemplateResponse(request, "team.html", {"d": detail, "user": user})
 
     @app.get("/admin/accounts", response_class=HTMLResponse)
-    def page_admin_accounts(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if user is None:
-            return RedirectResponse("/login", status_code=303)
+    def page_admin_accounts(
+        request: Request, user: User = Depends(require_page_user)  # noqa: B008
+    ) -> HTMLResponse:
         if user.role != "admin":
             raise HTTPException(status_code=403, detail="admin only")
         return _TEMPLATES.TemplateResponse(

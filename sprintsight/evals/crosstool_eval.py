@@ -10,11 +10,10 @@ from collections.abc import Callable
 from typing import Any
 
 from sprintsight.connect.github import PR, Activity
-from sprintsight.evals.harness import Assertion, Case, SuiteReport, run_suite
-from sprintsight.evals.watermelon import Verdict
+from sprintsight.evals.harness import Case, SuiteReport, run_suite
+from sprintsight.evals.watermelon import Verdict, classification_check, evidence_check
 
 Reconciler = Callable[[dict[str, Any]], Verdict]
-Check = Callable[[Verdict], Assertion]
 
 AS_OF = "2026-06-25T00:00:00+00:00"
 
@@ -109,31 +108,6 @@ CASES: list[dict[str, Any]] = [
 ]
 
 
-def _classification(expected_watermelon: bool, expected_actual: str) -> Check:
-    def check(v: Verdict) -> Assertion:
-        ok = v.is_watermelon == expected_watermelon and v.actual_status == expected_actual
-        return Assertion(
-            "classification",
-            ok,
-            f"is_watermelon={v.is_watermelon} (want {expected_watermelon}), "
-            f"actual={v.actual_status} (want {expected_actual})",
-        )
-
-    return check
-
-
-def _evidence(required: set[str]) -> Check:
-    def check(v: Verdict) -> Assertion:
-        missing = required - set(v.evidence)
-        return Assertion(
-            "evidence",
-            not missing,
-            f"missing={sorted(missing)}" if missing else "all required evidence cited",
-        )
-
-    return check
-
-
 def build_cases() -> list[Case]:
     cases: list[Case] = []
     for rec in CASES:
@@ -145,8 +119,8 @@ def build_cases() -> list[Case]:
                 name=rec["name"],
                 inputs=inputs,
                 assertions=[
-                    _classification(rec["is_watermelon"], rec["actual"]),
-                    _evidence(rec["required_evidence"]),
+                    classification_check(rec["is_watermelon"], rec["actual"]),
+                    evidence_check(rec["required_evidence"]),
                 ],
             )
         )
