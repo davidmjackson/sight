@@ -1,0 +1,18 @@
+{#
+  Shared presentational macros for the page templates. The RAG badge, the KPI summary card,
+  and the evidence list item were each repeated across portfolio/crosstool/team; defining
+  them once here keeps the markup (and its CSS classes) from drifting between pages.
+#}
+{% macro rag(status) -%}
+<span class="rag rag-{{ status }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro kpi(num, label, alert=False) -%}
+<div class="kpi{% if alert %} kpi-alert{% endif %}"><span class="num">{{ num }}</span><span class="label">{{ label }}</span></div>
+{%- endmacro %}
+
+{% macro evidence_card(title, ref, snippet, score=None) -%}
+<li class="evidence-card"><strong>{{ title }}</strong> <code>{{ ref }}</code>
+  {% if score is not none %}<span class="kb-score">match {{ score }}</span>{% endif %}
+  {% if snippet %}<div class="snippet">{{ snippet }}</div>{% endif %}</li>
+{%- endmacro %}

@@ -77,3 +77,12 @@ def require_api_user(request: Request) -> User:
     if user is None:
         raise HTTPException(status_code=401, detail="authentication required")
     return user
+
+
+def require_page_user(request: Request) -> User:
+    """HTML-page guard: like `require_api_user` but redirects an anonymous browser to the
+    login page (303) instead of returning 401. Use as a FastAPI dependency on page routes."""
+    user = session_user(request)
+    if user is None:
+        raise HTTPException(status_code=303, headers={"Location": "/login"})
+    return user

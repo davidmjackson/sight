@@ -1,13 +1,14 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}Cross-tool signals{% endblock %}
 {% block eyebrow %}Cross-tool{% endblock %}
 {% block heading %}Cross-tool signals{% endblock %}
 {% block sub %}Jira status versus the actual GitHub activity, per ticket. <a class="lnk" href="/">&larr; Back to portfolio</a>{% endblock %}
 {% block main %}
 <div class="summary-band">
-  <div class="kpi{% if page.summary.watermelons %} kpi-alert{% endif %}"><span class="num">{{ page.summary.watermelons }}</span><span class="label">Watermelons flagged</span></div>
-  <div class="kpi"><span class="num">{{ page.summary.stalled }}</span><span class="label">Stalled PRs</span></div>
-  <div class="kpi"><span class="num">{{ page.summary.checked }}</span><span class="label">Tickets checked</span></div>
+  {{ ui.kpi(page.summary.watermelons, "Watermelons flagged", alert=page.summary.watermelons) }}
+  {{ ui.kpi(page.summary.stalled, "Stalled PRs") }}
+  {{ ui.kpi(page.summary.checked, "Tickets checked") }}
 </div>
 
 <div class="card">
@@ -24,8 +25,8 @@
         <tr class="{{ 'watermelon' if row.classification == 'watermelon' else '' }}" title="{{ row.headline }}">
           <td>{{ row.key }}</td>
           <td>{{ row.team }}</td>
-          <td><span class="rag rag-{{ row.reported_status }}">{{ row.reported_status }}</span></td>
-          <td><span class="rag rag-{{ row.actual_status }}">{{ row.actual_status }}</span></td>
+          <td>{{ ui.rag(row.reported_status) }}</td>
+          <td>{{ ui.rag(row.actual_status) }}</td>
           <td>
             {% if row.classification == 'watermelon' %}<span class="badge badge-watermelon" title="Reported healthier than reality">watermelon</span>
             {% elif row.classification == 'stalled' %}<span class="badge badge-stalled" title="Open PR has gone quiet">stalled</span>
