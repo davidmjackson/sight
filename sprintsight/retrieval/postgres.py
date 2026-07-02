@@ -6,7 +6,7 @@ Team scoping is supported now that `artifact.team_id` is populated (real-wiring 
 `team` to restrict the search to one team; omit it for a global search.
 """
 
-from sprintsight.ingest.embedding import Embedder
+from sprintsight.ingest.embedding import Embedder, to_pgvector
 from sprintsight.ingest.store import DEMO_TENANT_ID
 from sprintsight.retrieval.retriever import RetrievedChunk
 
@@ -29,13 +29,14 @@ class PostgresRetriever:
         team: str | None = None,
     ) -> list[RetrievedChunk]:
         emb = embedder.embed([query])[0]
-        vec = "[" + ",".join(repr(x) for x in emb) + "]"
+        vec = to_pgvector(emb)
         # Always tenant-scoped (single-tenant today; one less edit when RLS/multi-tenant lands).
         params: list[object] = [vec, self.tenant_id]
         conditions = ["a.tenant_id = %s"]
         if team is not None:
-            # Scope to one team by key. team_id is populated at ingest (slice 3).
-            conditions.append("t.key = %s")
+            # Scope to one team by key (case-insensitive, matching PostgresArtifactSource).
+            # team_id is populated at ingest (slice 3).
+            conditions.append("lower(t.key) = lower(%s)")
             params.append(team)
         where = "where " + " and ".join(conditions)
         params += [vec, k]

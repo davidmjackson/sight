@@ -10,6 +10,8 @@ Single-tenant for the showcase: `tenant_id` is a fixed constant (decision D2, un
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from sprintsight.ingest.embedding import to_pgvector
+
 # Fixed demo tenant — single-tenant showcase (schema decision D2).
 DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -207,7 +209,7 @@ class PostgresStore:
                         c.text,
                         c.char_start,
                         c.char_end,
-                        "[" + ",".join(repr(x) for x in emb) + "]",
+                        to_pgvector(emb),
                         self.tenant_id,
                     ),
                 )
