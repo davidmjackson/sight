@@ -16,6 +16,35 @@ from sprintsight.ingest.embedding import to_pgvector
 DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 
 
+def connect_tenant(dsn: str, tenant_id: str):
+    """Open an autocommit psycopg connection scoped to `tenant_id` for RLS.
+
+    psycopg is imported lazily so importing this module needs no optional `db` extra.
+    """
+    import psycopg  # lazy: only needed when actually talking to Postgres
+
+    conn = psycopg.connect(dsn, autocommit=True)
+    # Announce this connection's tenant so per-tenant RLS policies (migration 0003) scope every
+    # statement at the DB. session-level (local=false) is correct under autocommit.
+    conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+    return conn
+
+
+class TenantScopedDB:
+    """Base for the Postgres store/retriever/artifact-source: one tenant-scoped connection.
+
+    Subclasses get `self.tenant_id`, `self._conn`, and `close()` for free, so the connect +
+    RLS-scoping lives in exactly one place.
+    """
+
+    def __init__(self, dsn: str, tenant_id: str = DEMO_TENANT_ID) -> None:
+        self.tenant_id = tenant_id
+        self._conn = connect_tenant(dsn, tenant_id)
+
+    def close(self) -> None:
+        self._conn.close()
+
+
 @dataclass(frozen=True)
 class ArtifactInput:
     source_type: str
@@ -120,19 +149,9 @@ class InMemoryStore:
         return f"mem-{self._seq:04d}"
 
 
-class PostgresStore:
+class PostgresStore(TenantScopedDB):
     """Postgres + pgvector store (psycopg). Used in CI against the migration's service DB
-    and in deployment against Supabase. psycopg is imported lazily so the module imports
-    without the optional `db` extra installed."""
-
-    def __init__(self, dsn: str, tenant_id: str = DEMO_TENANT_ID) -> None:
-        import psycopg  # lazy: only needed when actually talking to Postgres
-
-        self.tenant_id = tenant_id
-        self._conn = psycopg.connect(dsn, autocommit=True)
-        # Announce this connection's tenant so per-tenant RLS policies (migration 0003) scope every
-        # query/insert at the DB. session-level (local=false) is correct under autocommit.
-        self._conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+    and in deployment against Supabase. Connection + tenant scoping come from TenantScopedDB."""
 
     def upsert_team(self, key: str, name: str) -> str:
         with self._conn.cursor() as cur:
@@ -224,6 +243,3 @@ class PostgresStore:
             cur.execute("select count(*) from chunk")
             chunks = cur.fetchone()[0]
         return {"team": teams, "artifact": artifacts, "chunk": chunks}
-
-    def close(self) -> None:
-        self._conn.close()

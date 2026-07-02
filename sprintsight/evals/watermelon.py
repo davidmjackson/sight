@@ -58,7 +58,13 @@ def null_detector(inputs: dict[str, Any]) -> Verdict:
     )
 
 
-def _classification(expected_watermelon: bool, expected_actual: str) -> Check:
+def classification_check(expected_watermelon: bool, expected_actual: str) -> Check:
+    """Both watermelon evals share this: right label AND right actual status.
+
+    Shared here (with `Verdict` and `Check`) so the team eval and the cross-tool eval
+    grade classification identically.
+    """
+
     def check(v: Verdict) -> Assertion:
         ok = v.is_watermelon == expected_watermelon and v.actual_status == expected_actual
         return Assertion(
@@ -71,7 +77,9 @@ def _classification(expected_watermelon: bool, expected_actual: str) -> Check:
     return check
 
 
-def _evidence(required: set[str]) -> Check:
+def evidence_check(required: set[str]) -> Check:
+    """Both watermelon evals share this: every required artifact_id must be cited."""
+
     def check(v: Verdict) -> Assertion:
         missing = required - set(v.evidence)
         return Assertion(
@@ -100,8 +108,8 @@ def build_cases() -> list[Case]:
                 name=team.lower(),
                 inputs={"team": team, "artifacts": artifacts_for(team, CONTEXT_SPRINTS)},
                 assertions=[
-                    _classification(record["is_watermelon"], record["actual_status"]),
-                    _evidence(set(record["expected_evidence"])),
+                    classification_check(record["is_watermelon"], record["actual_status"]),
+                    evidence_check(set(record["expected_evidence"])),
                 ],
             )
         )

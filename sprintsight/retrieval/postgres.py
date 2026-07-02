@@ -7,20 +7,11 @@ Team scoping is supported now that `artifact.team_id` is populated (real-wiring 
 """
 
 from sprintsight.ingest.embedding import Embedder, to_pgvector
-from sprintsight.ingest.store import DEMO_TENANT_ID
+from sprintsight.ingest.store import TenantScopedDB
 from sprintsight.retrieval.retriever import RetrievedChunk
 
 
-class PostgresRetriever:
-    def __init__(self, dsn: str, tenant_id: str = DEMO_TENANT_ID) -> None:
-        import psycopg  # lazy: only when querying a real DB
-
-        self.tenant_id = tenant_id
-        self._conn = psycopg.connect(dsn, autocommit=True)
-        # Announce this connection's tenant so per-tenant RLS policies (migration 0003) scope every
-        # query at the DB. session-level (local=false) is correct under autocommit.
-        self._conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
-
+class PostgresRetriever(TenantScopedDB):
     def search(
         self,
         query: str,
@@ -69,6 +60,3 @@ class PostgresRetriever:
             )
             for source_type, source_ref, team_key, ordinal, text, distance in rows
         ]
-
-    def close(self) -> None:
-        self._conn.close()

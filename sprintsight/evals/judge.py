@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from sprintsight.llm import anthropic_tool_call
 from sprintsight.report.contract import Report
 from sprintsight.report.render import render_report_markdown
 
@@ -175,32 +176,16 @@ def sample_judge(judge: JudgeFn, report: Report, audience: str, n: int = 3) -> J
 
 
 def _anthropic_grader(model: str) -> Grader:
-    """Real grader: Anthropic Messages API with tool-use structured output.
-
-    Mirrors report/llm_writer.py:_anthropic_completer. ZDR is an account-level config, not a
-    per-request header, so no extra_headers here.
-    """
+    """Real grader: the shared Anthropic tool-use call, emitting the readability scores."""
 
     def grade(system: str, user: str, schema: dict[str, Any]) -> dict[str, Any]:
-        import anthropic  # lazy: only needed on the live path
-
-        client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
-        tool = {
-            "name": "emit_scores",
-            "description": "Return the four readability scores.",
-            "input_schema": schema,
-        }
-        msg = client.messages.create(
+        return anthropic_tool_call(
+            system,
+            user,
+            schema,
+            tool_name="emit_scores",
+            description="Return the four readability scores.",
             model=model,
-            max_tokens=1024,
-            system=system,
-            tools=[tool],
-            tool_choice={"type": "tool", "name": "emit_scores"},
-            messages=[{"role": "user", "content": user}],
         )
-        for block in msg.content:
-            if block.type == "tool_use" and block.name == "emit_scores":
-                return block.input
-        return {}
 
     return grade

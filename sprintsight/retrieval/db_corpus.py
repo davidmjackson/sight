@@ -8,7 +8,7 @@ PostgresRetriever. This path reads whole bodies, not chunks, so it needs no embe
 from collections.abc import Sequence
 
 from sprintsight.evals.fixtures import Artifact
-from sprintsight.ingest.store import DEMO_TENANT_ID
+from sprintsight.ingest.store import TenantScopedDB
 
 # Each row: (functional_id, source_type, team_key, sprint, body)
 Row = Sequence[object]
@@ -31,15 +31,10 @@ def rows_to_artifacts(rows: list[Row]) -> dict[str, Artifact]:
     return out
 
 
-class PostgresArtifactSource:
-    """Reads artifacts for a team out of Postgres, keyed by functional_id (production path)."""
+class PostgresArtifactSource(TenantScopedDB):
+    """Reads artifacts for a team out of Postgres, keyed by functional_id (production path).
 
-    def __init__(self, dsn: str, tenant_id: str = DEMO_TENANT_ID) -> None:
-        import psycopg  # lazy: only when querying a real DB
-
-        self.tenant_id = tenant_id
-        self._conn = psycopg.connect(dsn, autocommit=True)
-        self._conn.execute("select set_config('app.tenant_id', %s, false)", (tenant_id,))
+    Connection + tenant scoping come from TenantScopedDB."""
 
     def artifacts_for(
         self, team: str, sprints: list[int] | None = None
@@ -63,6 +58,3 @@ class PostgresArtifactSource:
             )
             rows = cur.fetchall()
         return rows_to_artifacts(rows)
-
-    def close(self) -> None:
-        self._conn.close()
